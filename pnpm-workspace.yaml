@@ -1,0 +1,8 @@
+packages:
+  - '.'
+
+ignoredBuiltDependencies:
+  - protobufjs
+
+onlyBuiltDependencies:
+  - esbuild

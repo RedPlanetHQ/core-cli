@@ -1,0 +1,47 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"outDir": "dist",
+		"rootDir": "source",
+		"strict": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"jsx": "react-jsx",
+		"declaration": true,
+		"declarationMap": true,
+		"sourceMap": true,
+		"types": ["node"],
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["source/*"]
+		}
+	},
+	"include": ["source/**/*"],
+	"exclude": [
+		"dist",
+		"node_modules",
+		"source/**/__tests__/**/*",
+		"source/**/*.spec.tsx"
+	],
+	"ts-node": {
+		"esm": true,
+		"experimentalSpecifierResolution": "node",
+		"compilerOptions": {
+			"module": "ESNext",
+			"moduleResolution": "node"
+		}
+	},
+	"tsc-alias": {
+		"resolveFullPaths": true,
+		"replacers": {
+			"default": {
+				"enabled": true
+			}
+		}
+	}
+}
