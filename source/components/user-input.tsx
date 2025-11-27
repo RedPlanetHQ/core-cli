@@ -1,5 +1,6 @@
 import {Box, Text, useFocus, useInput} from 'ink';
 import TextInput from 'ink-text-input';
+import Spinner from 'ink-spinner';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useTheme} from '@/hooks/useTheme';
 import {promptHistory} from '@/prompt-history';
@@ -9,9 +10,13 @@ import {useUIStateContext} from '@/hooks/useUIState';
 import {useInputState} from '@/hooks/useInputState';
 import {assemblePrompt} from '@/utils/prompt-processor';
 import {Completion} from '@/types/index';
-import {DevelopmentMode, DEVELOPMENT_MODE_LABELS} from '@/types/core';
+import {DevelopmentMode} from '@/types/core';
 import {readWeekTasks, writeWeekTasks, getNextTaskNumber} from '@/utils/tasks';
 import {Task, TaskState} from '@/types/tasks';
+import StatusBar from '@/components/status-bar';
+import CommandList from '@/components/command-list';
+import RoutinesList from '@/components/routines-list';
+import {getRoutineNames} from '@/utils/routines';
 
 interface ChatProps {
 	onSubmit?: (message: string) => void;
@@ -47,6 +52,12 @@ export default function UserInput({
 
 	// Command navigation state
 	const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
+
+	// Routine state
+	const [availableRoutines, setAvailableRoutines] = useState<string[]>([]);
+	const [selectedRoutineIndex, setSelectedRoutineIndex] = useState(0);
+	const [showRoutines, setShowRoutines] = useState(false);
+	const [loadingRoutines, setLoadingRoutines] = useState(false);
 
 	// Task mode state
 	const [isTaskMode, setIsTaskMode] = useState<boolean>(false);
@@ -90,6 +101,11 @@ export default function UserInput({
 	// Check if we're in command mode (input starts with /)
 	const isCommandMode = input.trim().startsWith('/');
 
+	// Check if we're in routine mode (input contains @ followed by optional letters)
+	const routineMatch = input.match(/@(\w*)$/);
+	const isRoutineMode = routineMatch !== null;
+	const routinePrefix = routineMatch?.[1] ?? '';
+
 	// Detect if user types "--" to enter task mode
 	useEffect(() => {
 		if (input === '--' && !isTaskMode) {
@@ -107,6 +123,24 @@ export default function UserInput({
 	useEffect(() => {
 		void promptHistory.loadHistory();
 	}, []);
+
+	// Load routines when @ is typed
+	useEffect(() => {
+		if (isRoutineMode && availableRoutines.length === 0 && !loadingRoutines) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect
+			setLoadingRoutines(true);
+			void getRoutineNames().then(routines => {
+				setAvailableRoutines(routines);
+				setLoadingRoutines(false);
+				setShowRoutines(true);
+			});
+		} else if (isRoutineMode && availableRoutines.length > 0) {
+			setShowRoutines(true);
+		} else if (!isRoutineMode && showRoutines) {
+			setShowRoutines(false);
+			setSelectedRoutineIndex(0);
+		}
+	}, [isRoutineMode, availableRoutines.length, loadingRoutines, showRoutines]);
 
 	// Calculate command completions using useMemo to prevent flashing
 	const commandCompletions = useMemo(() => {
@@ -141,6 +175,21 @@ export default function UserInput({
 			...customCompletions.map(cmd => ({name: cmd, isCustom: true})),
 		] as Completion[];
 	}, [input, isCommandMode, customCommands]);
+
+	// Calculate filtered routines based on prefix
+	const filteredRoutines = useMemo(() => {
+		if (!isRoutineMode || loadingRoutines) {
+			return [];
+		}
+
+		if (routinePrefix.length === 0) {
+			return availableRoutines;
+		}
+
+		return availableRoutines.filter(routine =>
+			routine.toLowerCase().includes(routinePrefix.toLowerCase()),
+		);
+	}, [isRoutineMode, loadingRoutines, routinePrefix, availableRoutines]);
 
 	// Update UI state for command completions
 	useEffect(() => {
@@ -190,6 +239,21 @@ export default function UserInput({
 			return;
 		}
 
+		// If routine completions are showing, auto-complete to selected routine
+		if (showRoutines && filteredRoutines.length > 0 && isRoutineMode) {
+			const selectedRoutine = filteredRoutines[selectedRoutineIndex];
+			// Replace @prefix with @routineName and add space
+			const beforeAt = input.substring(0, input.lastIndexOf('@'));
+			const completedText = `${beforeAt}@${selectedRoutine} `;
+			setInputState({
+				displayValue: completedText,
+				placeholderContent: currentState.placeholderContent,
+			});
+			setShowRoutines(false);
+			setTextInputKey(prev => prev + 1);
+			return;
+		}
+
 		// If command completions are showing, auto-complete to selected command instead of submitting
 		if (
 			showCompletions &&
@@ -234,6 +298,11 @@ export default function UserInput({
 		completions,
 		selectedCommandIndex,
 		isTaskMode,
+		showRoutines,
+		filteredRoutines,
+		selectedRoutineIndex,
+		isRoutineMode,
+		setInputState,
 	]);
 
 	// Handle escape key logic
@@ -379,6 +448,21 @@ export default function UserInput({
 
 		// Handle Tab key
 		if (key.tab) {
+			// Routine completion
+			if (isRoutineMode && !loadingRoutines && filteredRoutines.length > 0) {
+				const selectedRoutine = filteredRoutines[selectedRoutineIndex];
+				// Replace @prefix with @routineName
+				const beforeAt = input.substring(0, input.lastIndexOf('@'));
+				const completedText = `${beforeAt}@${selectedRoutine} `;
+				setInputState({
+					displayValue: completedText,
+					placeholderContent: currentState.placeholderContent,
+				});
+				setShowRoutines(false);
+				setTextInputKey(prev => prev + 1);
+				return;
+			}
+
 			// Command completion - use pre-calculated commandCompletions
 			if (input.startsWith('/')) {
 				if (commandCompletions.length === 1) {
@@ -437,6 +521,14 @@ export default function UserInput({
 
 		// Handle navigation
 		if (key.upArrow) {
+			// Routine navigation takes priority when routines are showing
+			if (showRoutines && filteredRoutines.length > 0) {
+				setSelectedRoutineIndex(prev =>
+					prev > 0 ? prev - 1 : filteredRoutines.length - 1,
+				);
+				return;
+			}
+
 			// Command navigation takes priority when completions are showing
 			if (showCompletions && completions.length > 0) {
 				setSelectedCommandIndex(prev =>
@@ -450,6 +542,14 @@ export default function UserInput({
 		}
 
 		if (key.downArrow) {
+			// Routine navigation takes priority when routines are showing
+			if (showRoutines && filteredRoutines.length > 0) {
+				setSelectedRoutineIndex(prev =>
+					prev < filteredRoutines.length - 1 ? prev + 1 : 0,
+				);
+				return;
+			}
+
 			// Command navigation takes priority when completions are showing
 			if (showCompletions && completions.length > 0) {
 				setSelectedCommandIndex(prev =>
@@ -531,51 +631,28 @@ export default function UserInput({
 					</Text>
 				)}
 				{showCompletions && completions.length > 0 && (
-					<Box flexDirection="column" marginTop={1}>
-						<Text color={colors.white}>
-							Available commands (↑/↓ to navigate, Tab to select):
-						</Text>
-						{completions.map((completion, index) => (
-							<Text
-								key={index}
-								color={completion.isCustom ? colors.white : colors.white}
-								bold={index === selectedCommandIndex}
-							>
-								{index === selectedCommandIndex ? '▸ ' : '  '}/{completion.name}
-							</Text>
-						))}
-					</Box>
+					<CommandList
+						completions={completions}
+						selectedIndex={selectedCommandIndex}
+						maxVisible={5}
+					/>
+				)}
+				{loadingRoutines && (
+					<Text color={colors.white}>
+						<Spinner type="dots2" /> Loading routines...
+					</Text>
+				)}
+				{showRoutines && filteredRoutines.length > 0 && (
+					<RoutinesList
+						routines={filteredRoutines}
+						selectedIndex={selectedRoutineIndex}
+						maxVisible={5}
+					/>
 				)}
 			</Box>
 
-			{/* Development mode indicator and MCP status - always visible */}
-			<Box marginTop={1} flexDirection="row" gap={2}>
-				<Text
-					color={
-						developmentMode === 'normal'
-							? colors.secondary
-							: developmentMode === 'auto-accept'
-							? colors.info
-							: colors.warning
-					}
-				>
-					<Text bold>{DEVELOPMENT_MODE_LABELS[developmentMode]}</Text>{' '}
-					<Text dimColor>(Shift+Tab to cycle)</Text>
-				</Text>
-				{mcpStatus && (
-					<Text
-						color={
-							mcpStatus.includes('Failed')
-								? colors.error
-								: mcpStatus.includes('Connected')
-								? colors.success
-								: colors.info
-						}
-					>
-						{mcpStatus}
-					</Text>
-				)}
-			</Box>
+			{/* Status bar with development mode, MCP status, and task counts */}
+			<StatusBar developmentMode={developmentMode} mcpStatus={mcpStatus} />
 		</Box>
 	);
 }

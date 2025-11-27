@@ -43,6 +43,7 @@
 	},
 	"files": [
 		"dist",
+		"routines",
 		"source/app/prompts/main-prompt.md"
 	],
 	"dependencies": {

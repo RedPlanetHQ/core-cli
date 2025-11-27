@@ -23,6 +23,7 @@ import {
 	usageCommand,
 	setNameCommand,
 	updateCommand,
+	tasksCommand,
 } from '@/commands/index';
 import InfoMessage from '@/components/info-message';
 import ErrorMessage from '@/components/error-message';
@@ -265,6 +266,7 @@ export function useAppInitialization({
 				mcpCommand,
 				setNameCommand,
 				updateCommand,
+				tasksCommand,
 			]);
 
 			// Now start with the properly initialized objects (excluding MCP)

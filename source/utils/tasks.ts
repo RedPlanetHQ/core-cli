@@ -218,10 +218,61 @@ export function writeTasksToMarkdown(tasks: Task[]): string {
 }
 
 /**
+ * Get the previous week identifier
+ */
+function getPreviousWeekIdentifier(currentWeekId: string): string {
+	// Parse current week (e.g., "2025-W48" -> year: 2025, week: 48)
+	const match = currentWeekId.match(/^(\d{4})-W(\d{2})$/);
+	if (!match) {
+		throw new Error(`Invalid week identifier: ${currentWeekId}`);
+	}
+
+	const year = parseInt(match[1], 10);
+	const week = parseInt(match[2], 10);
+
+	// Calculate previous week
+	if (week > 1) {
+		return `${year}-W${String(week - 1).padStart(2, '0')}`;
+	} else {
+		// If it's week 1, go to last week of previous year
+		// This is an approximation - week 53 or 52 depending on the year
+		return `${year - 1}-W52`;
+	}
+}
+
+/**
+ * Migrate incomplete tasks from previous week to current week
+ */
+async function migrateIncompleteTasks(currentWeekId: string): Promise<Task[]> {
+	const previousWeekId = getPreviousWeekIdentifier(currentWeekId);
+	const previousWeekFile = `${previousWeekId}.md`;
+	const previousWeekPath = join(getTasksDir(), previousWeekFile);
+
+	// If previous week file doesn't exist, nothing to migrate
+	if (!existsSync(previousWeekPath)) {
+		return [];
+	}
+
+	// Read previous week's tasks
+	const content = await readFile(previousWeekPath, 'utf-8');
+	const previousTasks = parseTasksFromMarkdown(content);
+
+	// Filter for incomplete tasks (TODO and IN_PROGRESS)
+	const incompleteTasks = previousTasks.filter(
+		t => t.state === TaskStateEnum.TODO || t.state === TaskStateEnum.IN_PROGRESS,
+	);
+
+	// Return migrated tasks (they'll keep all their metadata)
+	return incompleteTasks;
+}
+
+/**
  * Read tasks from current week's file
+ * Automatically migrates incomplete tasks from previous week if this is a new week
  */
 export async function readWeekTasks(): Promise<Task[]> {
 	const filePath = getCurrentWeekFilePath();
+	const currentWeekId = getWeekIdentifier();
 
 	// Ensure directory exists
 	const tasksDir = getTasksDir();
@@ -229,8 +280,17 @@ export async function readWeekTasks(): Promise<Task[]> {
 		await mkdir(tasksDir, {recursive: true});
 	}
 
-	// If file doesn't exist, return empty array
+	// If file doesn't exist, it's a new week - migrate incomplete tasks
 	if (!existsSync(filePath)) {
+		const migratedTasks = await migrateIncompleteTasks(currentWeekId);
+
+		// If we have migrated tasks, renumber them and write to the new file
+		if (migratedTasks.length > 0) {
+			const renumberedTasks = renumberTasks(migratedTasks);
+			await writeWeekTasks(renumberedTasks);
+			return renumberedTasks;
+		}
+
 		return [];
 	}
 

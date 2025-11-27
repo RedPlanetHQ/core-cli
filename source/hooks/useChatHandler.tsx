@@ -645,6 +645,25 @@ export function useChatHandler({
 	const handleChatMessage = async (message: string) => {
 		if (!client || !toolManager) return;
 
+		// Replace @routine patterns with actual routine content before sending to LLM
+		let processedMessage = message;
+		const routinePattern = /@(\w+)/g;
+		const routineMatches = [...message.matchAll(routinePattern)];
+
+		// Dynamically import routine utilities
+		const {getRoutine} = await import('@/utils/routines');
+
+		// Fetch and replace all routines
+		for (const match of routineMatches) {
+			const routineName = match[1];
+			const routine = await getRoutine(routineName);
+
+			if (routine) {
+				// Replace @routineName with the routine content
+				processedMessage = processedMessage.replace(match[0], routine.content);
+			}
+		}
+
 		// For display purposes, try to get the placeholder version from history
 		// This preserves the nice placeholder display in chat history
 		const history = promptHistory.getHistory();
@@ -659,8 +678,8 @@ export function useChatHandler({
 			/>,
 		);
 
-		// Add user message to conversation history
-		const userMessage: Message = {role: 'user', content: message};
+		// Add user message to conversation history using processed message (with routines replaced)
+		const userMessage: Message = {role: 'user', content: processedMessage};
 		const updatedMessages = [...messages, userMessage];
 		setMessages(updatedMessages);
 
