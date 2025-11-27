@@ -5,6 +5,7 @@ import {saveAssistantName, getAssistantName} from '@/config/preferences';
 import {useTheme} from '@/hooks/useTheme';
 
 const ASSISTANT_NAMES = [
+	{name: 'Sol', description: 'Radiant and illuminating'},
 	{name: 'Aria', description: 'Melodious and graceful'},
 	{name: 'Nova', description: 'Bright and innovative'},
 	{name: 'Atlas', description: 'Strong and reliable'},

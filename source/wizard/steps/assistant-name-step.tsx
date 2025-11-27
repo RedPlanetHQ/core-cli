@@ -10,6 +10,7 @@ interface AssistantNameStepProps {
 }
 
 const ASSISTANT_NAMES = [
+	{name: 'Sol', description: 'Radiant and illuminating'},
 	{name: 'Aria', description: 'Melodious and graceful'},
 	{name: 'Nova', description: 'Bright and innovative'},
 	{name: 'Atlas', description: 'Strong and reliable'},
