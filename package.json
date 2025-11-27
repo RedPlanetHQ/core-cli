@@ -1,12 +1,15 @@
 {
 	"name": "@redplanethq/core-cli",
 	"main": "dist/cli.js",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "",
 	"keywords": [
 		"cli",
 		"ai"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"author": "RedPlanetHQ",
 	"license": "MIT",
 	"repository": {
@@ -53,7 +56,7 @@
 		"cli-table3": "^0.6.5",
 		"dotenv": "^17.2.3",
 		"ignore": "^7.0.5",
-		"ink": "^6.3.1",
+		"ink": "^6.5.1",
 		"@inkjs/ui": "2.0.0",
 		"ink-big-text": "^2.0.0",
 		"ink-gradient": "^3.0.0",

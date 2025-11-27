@@ -6,3 +6,6 @@ export * from './model';
 export * from './provider';
 export * from './setup-config';
 export * from './usage';
+export * from './mcp';
+export * from './set-name';
+export * from './update';

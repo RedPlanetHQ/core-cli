@@ -31,6 +31,8 @@ import BashExecutionIndicator from './components/bash-execution-indicator';
 import {useToolHandler} from './hooks/useToolHandler';
 import ModelSelector from './components/model-selector';
 import ProviderSelector from './components/provider-selector';
+import NameSelector from './components/name-selector';
+import {getAssistantName} from './config/preferences';
 
 export default function App() {
 	// Use extracted hooks
@@ -79,6 +81,7 @@ export default function App() {
 		setIsModelSelectionMode: appState.setIsModelSelectionMode,
 		setIsProviderSelectionMode: appState.setIsProviderSelectionMode,
 		setIsThemeSelectionMode: appState.setIsThemeSelectionMode,
+		setIsNameSelectionMode: appState.setIsNameSelectionMode,
 		setIsRecommendationsMode: appState.setIsRecommendationsMode,
 		setIsConfigWizardMode: appState.setIsConfigWizardMode,
 		addToChatQueue: appState.addToChatQueue,
@@ -166,6 +169,7 @@ export default function App() {
 				onEnterModelSelectionMode: modeHandlers.enterModelSelectionMode,
 				onEnterProviderSelectionMode: modeHandlers.enterProviderSelectionMode,
 				onEnterThemeSelectionMode: modeHandlers.enterThemeSelectionMode,
+				onEnterNameSelectionMode: modeHandlers.enterNameSelectionMode,
 				onEnterRecommendationsMode: modeHandlers.enterRecommendationsMode,
 				onEnterConfigWizardMode: modeHandlers.enterConfigWizardMode,
 				onShowStatus: handleShowStatus,
@@ -190,6 +194,7 @@ export default function App() {
 			modeHandlers.enterThemeSelectionMode,
 			modeHandlers.enterRecommendationsMode,
 			modeHandlers.enterConfigWizardMode,
+			modeHandlers.enterNameSelectionMode,
 			handleShowStatus,
 			chatHandler.handleChatMessage,
 			appState.addToChatQueue,
@@ -253,7 +258,7 @@ export default function App() {
 								<Box flexDirection="column" marginBottom={1}>
 									<Box marginBottom={1}>
 										<Text color={themeContextValue.colors.primary} bold>
-											{appState.currentModel}:
+											{getAssistantName()}:
 										</Text>
 									</Box>
 									<Text>{chatHandler.streamingContent}</Text>
@@ -281,6 +286,11 @@ export default function App() {
 								<ThemeSelector
 									onThemeSelect={modeHandlers.handleThemeSelect}
 									onCancel={modeHandlers.handleThemeSelectionCancel}
+								/>
+							) : appState.isNameSelectionMode ? (
+								<NameSelector
+									onNameSelect={modeHandlers.handleNameSelect}
+									onCancel={modeHandlers.handleNameSelectionCancel}
 								/>
 							) : appState.isConfigWizardMode ? (
 								<ConfigWizard
@@ -328,7 +338,7 @@ export default function App() {
 							) : appState.mcpInitialized && !appState.client ? (
 								<></>
 							) : (
-								<Text color={themeContextValue.colors.primary}>
+								<Text color={themeContextValue.colors.white}>
 									<Spinner type="dots2" /> Loading...
 								</Text>
 							)}

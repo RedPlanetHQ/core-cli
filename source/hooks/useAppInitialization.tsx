@@ -19,7 +19,10 @@ import {
 	modelCommand,
 	providerCommand,
 	setupConfigCommand,
+	mcpCommand,
 	usageCommand,
+	setNameCommand,
+	updateCommand,
 } from '@/commands/index';
 import InfoMessage from '@/components/info-message';
 import ErrorMessage from '@/components/error-message';
@@ -145,9 +148,7 @@ export function useAppInitialization({
 			// Define progress callback to show live updates
 			const onProgress = (result: MCPInitResult) => {
 				if (result.success) {
-					setMcpStatus(
-						`Connected to MCP server "${result.serverName}" with ${result.toolCount} tools`,
-					);
+					setMcpStatus('');
 				} else {
 					setMcpStatus(
 						`Failed to connect to MCP server "${result.serverName}": ${result.error}`,
@@ -261,6 +262,9 @@ export function useAppInitialization({
 				providerCommand,
 				setupConfigCommand,
 				usageCommand,
+				mcpCommand,
+				setNameCommand,
+				updateCommand,
 			]);
 
 			// Now start with the properly initialized objects (excluding MCP)

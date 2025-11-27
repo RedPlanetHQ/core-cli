@@ -45,7 +45,7 @@ export default memo(function UserMessage({message}: UserMessageProps) {
 	const lines = message.split('\n');
 
 	return (
-		<Box flexDirection="column" marginBottom={0}>
+		<Box flexDirection="column" marginBottom={1}>
 			<Box>
 				<Text color={colors.secondary} bold>
 					You:

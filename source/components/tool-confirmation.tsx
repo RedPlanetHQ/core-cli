@@ -126,7 +126,16 @@ export default function ToolConfirmation({
 	};
 
 	return (
-		<Box width={boxWidth} marginBottom={1}>
+		<Box
+			width={boxWidth}
+			marginBottom={1}
+			borderLeft={false}
+			borderRight={false}
+			borderBottom={false}
+			borderColor={colors.white}
+			borderDimColor
+			borderStyle="round"
+		>
 			<Box flexDirection="column">
 				{/* Formatter preview */}
 				{isLoadingPreview && (
@@ -151,7 +160,7 @@ export default function ToolConfirmation({
 				{!(hasFormatterError && !hasValidationError) && (
 					<>
 						<Box marginBottom={1}>
-							<Text color={colors.tool}>
+							<Text color={colors.primary}>
 								{hasValidationError
 									? 'Validation failed. Do you still want to execute this tool?'
 									: `Do you want to execute ${

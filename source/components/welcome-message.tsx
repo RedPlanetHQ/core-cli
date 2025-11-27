@@ -6,6 +6,7 @@ import {useTheme} from '@/hooks/useTheme';
 import fs from 'fs';
 import path from 'path';
 import {fileURLToPath} from 'url';
+import {getAssistantName} from '@/config/preferences';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,15 +23,17 @@ export default memo(function WelcomeMessage() {
 		<Box flexDirection="column" marginBottom={1}>
 			<Box gap={1}>
 				<Box flexDirection="column">
-					<Text color={colors.primary}> ●─────●</Text>
-					<Text color={colors.primary}> ╱│╲ ╱│╲</Text>
-					<Text color={colors.primary}>● │ ●─● │ ●</Text>
-					<Text color={colors.primary}> ╲│╱ ╲│╱</Text>
-					<Text color={colors.primary}> ●─────●</Text>
+					<Text color={colors.primary}>    ▄▄▄▄▄▄▄</Text>
+					<Text color={colors.primary}>  ▄█████████▄</Text>
+					<Text color={colors.primary}> ▐███████████▌</Text>
+					<Text color={colors.primary}> ▐██ ▄▄ ▄▄ ██▌</Text>
+					<Text color={colors.primary}> ▐██ ██ ██ ██▌</Text>
+					<Text color={colors.primary}> ▐██▄▄▄▄▄▄▄██▌</Text>
+					<Text color={colors.primary}>  ▀█████████▀</Text>
 				</Box>
 				<Box flexDirection="column" justifyContent="center">
 					<Text color={colors.white} bold>
-						CORE{' '}
+						{getAssistantName()}{' '}
 					</Text>
 					<Text color={colors.white} dimColor>
 						v{packageJson.version}

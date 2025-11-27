@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
 	LLMClient,
 	LLMChatResponse,
@@ -22,6 +21,7 @@ import ErrorMessage from '@/components/error-message';
 import React from 'react';
 import {appConfig} from '@/config/index';
 import {getCurrentSession} from '@/usage/tracker';
+import {getAssistantName} from '@/config/preferences';
 
 // Helper function to filter out invalid tool calls and deduplicate by ID and function
 // Returns valid tool calls and error results for invalid ones
@@ -129,6 +129,7 @@ export function useChatHandler({
 	// These tools should not be exposed to the AI model
 
 	// Function to save episode to Core API
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const saveEpisode = async (userMsg: string, assistantMsg: string) => {
 		// Get session ID from tracker
 		const currentSession = getCurrentSession();
@@ -139,28 +140,27 @@ export function useChatHandler({
 			return;
 		}
 
-		return;
-		// try {
-		// 	const episodeBody = `user: ${userMsg}\n\nassistant: ${assistantMsg}`;
-		// 	const payload = {
-		// 		episodeBody,
-		// 		referenceTime: new Date().toISOString(),
-		// 		sessionId,
-		// 		source: 'cli',
-		// 	};
+		try {
+			const episodeBody = `user: ${userMsg}\n\nassistant: ${assistantMsg}`;
+			const payload = {
+				episodeBody,
+				referenceTime: new Date().toISOString(),
+				sessionId,
+				source: 'cli',
+			};
 
-		// 	await fetch(`${appConfig.auth.url}/api/v1/add`, {
-		// 		method: 'POST',
-		// 		headers: {
-		// 			'Content-Type': 'application/json',
-		// 			Authorization: `Bearer ${appConfig.auth.apiKey}`,
-		// 		},
-		// 		body: JSON.stringify(payload),
-		// 	});
-		// } catch (error) {
-		// 	// Silent failure - don't block conversation if episode saving fails
-		// 	console.warn('Failed to save episode to Core:', error);
-		// }
+			await fetch(`${appConfig.auth.url}/api/v1/add`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${appConfig.auth.apiKey}`,
+				},
+				body: JSON.stringify(payload),
+			});
+		} catch (error) {
+			// Silent failure - don't block conversation if episode saving fails
+			console.warn('Failed to save episode to Core:', error);
+		}
 	};
 
 	// Reset conversation state when messages are cleared
@@ -679,7 +679,13 @@ export function useChatHandler({
 		try {
 			// Load and process system prompt with dynamic tool documentation
 			// Note: We still need tool definitions (not just native tools) for documentation
-			const systemPrompt = processPromptTemplate({}, userProfile, integrations);
+			const assistantName = getAssistantName();
+			const systemPrompt = processPromptTemplate(
+				{},
+				userProfile,
+				integrations,
+				assistantName,
+			);
 
 			// Create stream request
 			const systemMessage: Message = {

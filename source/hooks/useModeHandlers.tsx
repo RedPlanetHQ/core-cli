@@ -25,6 +25,7 @@ interface UseModeHandlersProps {
 	setIsModelSelectionMode: (mode: boolean) => void;
 	setIsProviderSelectionMode: (mode: boolean) => void;
 	setIsThemeSelectionMode: (mode: boolean) => void;
+	setIsNameSelectionMode: (mode: boolean) => void;
 	setIsRecommendationsMode: (mode: boolean) => void;
 	setIsConfigWizardMode: (mode: boolean) => void;
 	addToChatQueue: (component: React.ReactNode) => void;
@@ -47,6 +48,7 @@ export function useModeHandlers({
 	setIsModelSelectionMode,
 	setIsProviderSelectionMode,
 	setIsThemeSelectionMode,
+	setIsNameSelectionMode,
 	setIsRecommendationsMode,
 	setIsConfigWizardMode,
 	addToChatQueue,
@@ -189,6 +191,28 @@ export function useModeHandlers({
 		setIsThemeSelectionMode(false);
 	};
 
+	// Helper function to enter name selection mode
+	const enterNameSelectionMode = () => {
+		setIsNameSelectionMode(true);
+	};
+
+	// Handle name selection
+	const handleNameSelect = (selectedName: string) => {
+		addToChatQueue(
+			<SuccessMessage
+				key={`name-changed-${componentKeyCounter}`}
+				message={`Assistant name changed to: ${selectedName}`}
+				hideBox={true}
+			/>,
+		);
+		setIsNameSelectionMode(false);
+	};
+
+	// Handle name selection cancel
+	const handleNameSelectionCancel = () => {
+		setIsNameSelectionMode(false);
+	};
+
 	// Helper function to enter recommendations mode
 	const enterRecommendationsMode = () => {
 		setIsRecommendationsMode(true);
@@ -289,6 +313,7 @@ export function useModeHandlers({
 		enterModelSelectionMode,
 		enterProviderSelectionMode,
 		enterThemeSelectionMode,
+		enterNameSelectionMode,
 		enterRecommendationsMode,
 		enterConfigWizardMode,
 		handleModelSelect,
@@ -297,6 +322,8 @@ export function useModeHandlers({
 		handleProviderSelectionCancel,
 		handleThemeSelect,
 		handleThemeSelectionCancel,
+		handleNameSelect,
+		handleNameSelectionCancel,
 		handleRecommendationsCancel,
 		handleConfigWizardComplete,
 		handleConfigWizardCancel,

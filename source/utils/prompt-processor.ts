@@ -82,6 +82,18 @@ function injectUserProfile(prompt: string, userProfile?: string): string {
 }
 
 /**
+ * Inject assistant name into the prompt template
+ */
+function injectAssistantName(prompt: string, assistantName?: string): string {
+	if (!assistantName) {
+		return prompt;
+	}
+
+	// Add assistant name to the beginning of the prompt with clear instructions
+	return `Your name is ${assistantName}. This is the name the user has chosen for you as their AI assistant. You are currently interacting with the user as ${assistantName}. When introducing yourself, referring to yourself, or when the context calls for it, always use the name ${assistantName}.\n\n${prompt}`;
+}
+
+/**
  * Inject connected integrations information into the prompt template
  */
 function injectIntegrations(prompt: string, integrations?: string): string {
@@ -100,6 +112,7 @@ export function processPromptTemplate(
 	tools: Record<string, AISDKCoreTool>,
 	userProfile?: string,
 	integrations?: string,
+	assistantName?: string,
 ): string {
 	let systemPrompt = 'You are a helpful AI assistant.'; // fallback
 
@@ -115,6 +128,9 @@ export function processPromptTemplate(
 			);
 		}
 	}
+
+	// Inject assistant name first (adds to the beginning)
+	systemPrompt = injectAssistantName(systemPrompt, assistantName);
 
 	// Inject system information
 	systemPrompt = injectSystemInfo(systemPrompt);

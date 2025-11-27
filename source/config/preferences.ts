@@ -1,8 +1,10 @@
-import {readFileSync, writeFileSync} from 'fs';
+import {readFileSync, writeFileSync, existsSync} from 'fs';
 import {logError} from '@/utils/message-queue';
 import {getClosestConfigFile} from '@/config/index';
+import {join} from 'path';
+import {getConfigPath} from '@/config/paths';
 
-import type {UserPreferences} from '@/types/index';
+import type {UserPreferences, AppConfig} from '@/types/index';
 
 let PREFERENCES_PATH: string | null = null;
 
@@ -48,4 +50,44 @@ export function updateLastUsed(provider: string, model: string): void {
 export function getLastUsedModel(provider: string): string | undefined {
 	const preferences = loadPreferences();
 	return preferences.providerModels?.[provider];
+}
+
+export function saveAssistantName(name: string): void {
+	try {
+		const configPath = join(getConfigPath(), 'config.json');
+		let config: {core: AppConfig} = {core: {}};
+
+		// Load existing config if it exists
+		if (existsSync(configPath)) {
+			const configContent = readFileSync(configPath, 'utf-8');
+			config = JSON.parse(configContent);
+			if (!config.core) {
+				config.core = {};
+			}
+		}
+
+		// Update assistant name
+		config.core.assistantName = name;
+
+		// Write back to config
+		writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+	} catch (error) {
+		logError(`Failed to save assistant name: ${String(error)}`);
+	}
+}
+
+export function getAssistantName(): string | undefined {
+	try {
+		const configPath = join(getConfigPath(), 'config.json');
+		if (!existsSync(configPath)) {
+			return undefined;
+		}
+
+		const configContent = readFileSync(configPath, 'utf-8');
+		const config = JSON.parse(configContent) as {core?: AppConfig};
+		return config.core?.assistantName;
+	} catch (error) {
+		logError(`Failed to load assistant name: ${String(error)}`);
+		return undefined;
+	}
 }

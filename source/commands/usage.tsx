@@ -15,6 +15,7 @@ import {getModelContextLimit} from '@/models/index';
 import {createTokenizer} from '@/tokenization/index';
 import {getToolManager} from '@/message-handler';
 import {processPromptTemplate} from '@/utils/prompt-processor';
+import {getAssistantName} from '@/config/preferences';
 
 export const usageCommand: Command = {
 	name: 'usage',
@@ -36,8 +37,13 @@ export const usageCommand: Command = {
 
 		// Generate the system prompt to include in token calculation
 		const toolManager = getToolManager();
+
+		const assistantName = getAssistantName();
 		const systemPrompt = processPromptTemplate(
 			toolManager ? toolManager.getAllTools() : {},
+			undefined,
+			undefined,
+			assistantName,
 		);
 
 		// Create system message to include in token calculation

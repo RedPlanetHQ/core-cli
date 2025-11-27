@@ -3,12 +3,14 @@ import {memo, useMemo} from 'react';
 import {useTheme} from '@/hooks/useTheme';
 import type {AssistantMessageProps} from '@/types/index';
 import {parseMarkdown} from '@/markdown-parser/index';
+import {getAssistantName} from '@/config/preferences';
 
 export default memo(function AssistantMessage({
 	message,
 	model,
 }: AssistantMessageProps) {
 	const {colors} = useTheme();
+	const assistantName = getAssistantName() || model;
 
 	// Render markdown to terminal-formatted text with theme colors
 	const renderedMessage = useMemo(() => {
@@ -24,7 +26,7 @@ export default memo(function AssistantMessage({
 		<Box flexDirection="column" marginBottom={1}>
 			<Box>
 				<Text color={colors.primary} bold>
-					{model}:
+					{assistantName}:
 				</Text>
 			</Box>
 			<Text>{renderedMessage}</Text>

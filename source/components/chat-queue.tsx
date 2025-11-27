@@ -14,7 +14,7 @@ export default memo(function ChatQueue({
 	);
 
 	return (
-		<Box flexDirection="column" gap={1}>
+		<Box flexDirection="column" gap={2}>
 			{/* All content is static to prevent re-renders */}
 			{allStaticComponents.length > 0 && (
 				<Static items={allStaticComponents}>

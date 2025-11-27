@@ -59,6 +59,8 @@ export function useAppState() {
 		useState<boolean>(false);
 	const [isThemeSelectionMode, setIsThemeSelectionMode] =
 		useState<boolean>(false);
+	const [isNameSelectionMode, setIsNameSelectionMode] =
+		useState<boolean>(false);
 	const [isRecommendationsMode, setIsRecommendationsMode] =
 		useState<boolean>(false);
 	const [isConfigWizardMode, setIsConfigWizardMode] = useState<boolean>(false);
@@ -184,6 +186,7 @@ export function useAppState() {
 		isModelSelectionMode,
 		isProviderSelectionMode,
 		isThemeSelectionMode,
+		isNameSelectionMode,
 		isRecommendationsMode,
 		isConfigWizardMode,
 		isToolConfirmationMode,
@@ -220,6 +223,7 @@ export function useAppState() {
 		setIsModelSelectionMode,
 		setIsProviderSelectionMode,
 		setIsThemeSelectionMode,
+		setIsNameSelectionMode,
 		setIsRecommendationsMode,
 		setIsConfigWizardMode,
 		setIsToolConfirmationMode,

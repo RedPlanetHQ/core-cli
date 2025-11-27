@@ -10,6 +10,8 @@ import {useInputState} from '@/hooks/useInputState';
 import {assemblePrompt} from '@/utils/prompt-processor';
 import {Completion} from '@/types/index';
 import {DevelopmentMode, DEVELOPMENT_MODE_LABELS} from '@/types/core';
+import {readWeekTasks, writeWeekTasks, getNextTaskNumber} from '@/utils/tasks';
+import {Task, TaskState} from '@/types/tasks';
 
 interface ChatProps {
 	onSubmit?: (message: string) => void;
@@ -46,10 +48,14 @@ export default function UserInput({
 	// Command navigation state
 	const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
 
+	// Task mode state
+	const [isTaskMode, setIsTaskMode] = useState<boolean>(false);
+	const [taskAddedMessage, setTaskAddedMessage] = useState<string>('');
+
 	// Responsive placeholder text
 	const defaultPlaceholder = isNarrow
-		? '/ for commands, ! for bash, ↑/↓ history'
-		: 'Type `/` and then press Tab for command suggestions or `!` to execute bash commands. Use ↑/↓ for history.';
+		? 'Type "What shall we work on today?"'
+		: 'Type "What shall we work on today?';
 	const actualPlaceholder = placeholder ?? defaultPlaceholder;
 
 	const {
@@ -83,6 +89,19 @@ export default function UserInput({
 
 	// Check if we're in command mode (input starts with /)
 	const isCommandMode = input.trim().startsWith('/');
+
+	// Detect if user types "--" to enter task mode
+	useEffect(() => {
+		if (input === '--' && !isTaskMode) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect
+			setIsTaskMode(true);
+			// Use setInputState to bypass paste detection when clearing
+			setInputState({
+				displayValue: '',
+				placeholderContent: currentState.placeholderContent,
+			});
+		}
+	}, [input, isTaskMode, currentState, setInputState]);
 
 	// Load history on mount
 	useEffect(() => {
@@ -137,7 +156,40 @@ export default function UserInput({
 	// Helper functions
 
 	// Handle form submission
-	const handleSubmit = useCallback(() => {
+	const handleSubmit = useCallback(async () => {
+		// If in task mode, add the task directly
+		if (isTaskMode && input.trim()) {
+			try {
+				const tasks = await readWeekTasks();
+				const taskNumber = getNextTaskNumber(tasks);
+
+				const newTask: Task = {
+					number: taskNumber,
+					description: input.trim(),
+					state: TaskState.TODO,
+					tags: [],
+				};
+
+				tasks.push(newTask);
+				await writeWeekTasks(tasks);
+
+				setTaskAddedMessage(`Task #${taskNumber} added successfully!`);
+				setTimeout(() => setTaskAddedMessage(''), 3000);
+
+				resetInput();
+				setIsTaskMode(false);
+				setTextInputKey(prev => prev + 1);
+			} catch (error) {
+				setTaskAddedMessage(
+					`Failed to add task: ${
+						error instanceof Error ? error.message : 'Unknown error'
+					}`,
+				);
+				setTimeout(() => setTaskAddedMessage(''), 3000);
+			}
+			return;
+		}
+
 		// If command completions are showing, auto-complete to selected command instead of submitting
 		if (
 			showCompletions &&
@@ -181,10 +233,20 @@ export default function UserInput({
 		showCompletions,
 		completions,
 		selectedCommandIndex,
+		isTaskMode,
 	]);
 
 	// Handle escape key logic
 	const handleEscape = useCallback(() => {
+		// If in task mode, exit task mode first
+		if (isTaskMode) {
+			setIsTaskMode(false);
+			resetInput();
+			setTextInputKey(prev => prev + 1);
+			focus('user-input');
+			return;
+		}
+
 		if (showClearMessage) {
 			resetInput();
 			resetUIState();
@@ -192,7 +254,14 @@ export default function UserInput({
 		} else {
 			setShowClearMessage(true);
 		}
-	}, [showClearMessage, resetInput, resetUIState, setShowClearMessage, focus]);
+	}, [
+		showClearMessage,
+		resetInput,
+		resetUIState,
+		setShowClearMessage,
+		focus,
+		isTaskMode,
+	]);
 
 	// History navigation
 	const handleHistoryNavigation = useCallback(
@@ -396,26 +465,38 @@ export default function UserInput({
 
 	const textColor = disabled || !input ? colors.secondary : colors.primary;
 
+	// Update placeholder for task mode
+	const taskModePlaceholder = 'Enter task description...';
+	const currentPlaceholder = isTaskMode
+		? taskModePlaceholder
+		: actualPlaceholder;
+
+	// Update prompt symbol based on mode
+	const promptSymbol = isTaskMode ? '--' : '>';
+
 	return (
 		<Box flexDirection="column" paddingY={1} width="100%" marginTop={0}>
 			<Box
 				flexDirection="column"
-				borderStyle={isBashMode ? 'round' : undefined}
-				borderColor={isBashMode ? colors.tool : undefined}
-				paddingX={isBashMode ? 1 : 0}
-				width={isBashMode ? boxWidth : undefined}
+				borderStyle={isBashMode || isTaskMode ? 'round' : undefined}
+				borderColor={
+					isBashMode ? colors.tool : isTaskMode ? colors.success : undefined
+				}
+				paddingX={isBashMode || isTaskMode ? 1 : 0}
+				width={isBashMode || isTaskMode ? boxWidth : undefined}
 			>
-				{!isBashMode && (
-					<>
-						<Text color={colors.primary}>
-							{disabled ? '' : 'What would you like me to help with?'}
-						</Text>
-					</>
-				)}
-
 				{/* Input row */}
-				<Box>
-					<Text color={textColor}>{'>'} </Text>
+				<Box
+					borderLeft={false}
+					borderRight={false}
+					borderBottom
+					borderColor={colors.white}
+					borderDimColor
+					borderStyle="round"
+				>
+					<Text color={isTaskMode ? colors.success : textColor}>
+						{promptSymbol}{' '}
+					</Text>
 					{disabled ? (
 						<Text color={colors.secondary}>...</Text>
 					) : (
@@ -423,8 +504,9 @@ export default function UserInput({
 							key={textInputKey}
 							value={input}
 							onChange={updateInput}
+							// eslint-disable-next-line @typescript-eslint/no-misused-promises
 							onSubmit={handleSubmit}
-							placeholder={actualPlaceholder}
+							placeholder={currentPlaceholder}
 							focus={isFocused}
 						/>
 					)}
@@ -434,6 +516,14 @@ export default function UserInput({
 					<Text color={colors.tool} dimColor>
 						Bash Mode
 					</Text>
+				)}
+				{isTaskMode && (
+					<Text color={colors.success} dimColor>
+						Task Mode - Press ESC to exit
+					</Text>
+				)}
+				{taskAddedMessage && (
+					<Text color={colors.success}>{taskAddedMessage}</Text>
 				)}
 				{showClearMessage && (
 					<Text color={colors.white} dimColor>

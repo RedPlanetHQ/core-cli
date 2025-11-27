@@ -7,6 +7,7 @@ import {spawnSync} from 'node:child_process';
 import type {ProviderConfig} from '../types/config';
 import type {McpServerConfig} from './templates/mcp-templates';
 import {AuthStep, type CoreAuthConfig} from './steps/auth-step';
+import {AssistantNameStep} from './steps/assistant-name-step';
 import {McpStep} from './steps/mcp-step';
 import {SummaryStep} from './steps/summary-step';
 import {buildConfigObject} from './validation';
@@ -16,6 +17,7 @@ import {getConfigPath} from '@/config/paths';
 import {useResponsiveTerminal} from '@/hooks/useTerminalWidth';
 import {ProviderStep} from './steps/provider-step';
 import {join} from 'node:path';
+import {getAssistantName, saveAssistantName} from '@/config/preferences';
 
 interface ConfigWizardProps {
 	projectDir: string;
@@ -25,6 +27,7 @@ interface ConfigWizardProps {
 
 type WizardStep =
 	| 'auth'
+	| 'assistantName'
 	| 'providers'
 	| 'mcp'
 	| 'summary'
@@ -85,6 +88,12 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 
 	const handleAuthComplete = (authConfig: CoreAuthConfig) => {
 		setAuth(authConfig);
+		setStep('assistantName');
+	};
+
+	const handleAssistantNameComplete = (name: string) => {
+		// Save assistant name to preferences
+		saveAssistantName(name);
 		setStep('providers');
 	};
 
@@ -254,6 +263,7 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 			input === 'e' &&
 			configPath &&
 			(step === 'auth' ||
+				step === 'assistantName' ||
 				step === 'providers' ||
 				step === 'mcp' ||
 				step === 'summary')
@@ -272,12 +282,21 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 					/>
 				);
 			}
+			case 'assistantName': {
+				return (
+					<AssistantNameStep
+						existingName={getAssistantName()}
+						onComplete={handleAssistantNameComplete}
+						onBack={() => setStep('auth')}
+					/>
+				);
+			}
 			case 'providers': {
 				return (
 					<ProviderStep
 						existingProviders={providers}
 						onComplete={handleProvidersComplete}
-						onBack={() => setStep('auth')}
+						onBack={() => setStep('assistantName')}
 					/>
 				);
 			}
@@ -378,6 +397,7 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 			{renderStep()}
 
 			{(step === 'auth' ||
+				step === 'assistantName' ||
 				step === 'providers' ||
 				step === 'mcp' ||
 				step === 'summary') &&

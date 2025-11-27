@@ -18,6 +18,7 @@ export async function handleMessageSubmission(
 		onEnterModelSelectionMode,
 		onEnterProviderSelectionMode,
 		onEnterThemeSelectionMode,
+		onEnterNameSelectionMode,
 		onEnterConfigWizardMode,
 		onShowStatus,
 		onHandleChatMessage,
@@ -127,6 +128,9 @@ ${result.fullOutput || '(No output)'}`;
 			return;
 		} else if (commandName === 'theme') {
 			onEnterThemeSelectionMode();
+			return;
+		} else if (commandName === 'set-name') {
+			onEnterNameSelectionMode();
 			return;
 		} else if (commandName === 'setup-config') {
 			onEnterConfigWizardMode();

@@ -5,7 +5,7 @@ import {Text, Box, useInput} from 'ink';
 import {useTheme} from '@/hooks/useTheme';
 import {useTerminalWidth} from '@/hooks/useTerminalWidth';
 
-const PREVIEW_LINES = 3; // Number of lines to show when collapsed
+const PREVIEW_CHARS = 100; // Number of characters to show when collapsed
 
 export default function ToolMessage({
 	title,
@@ -34,31 +34,34 @@ export default function ToolMessage({
 	// Handle both string and ReactNode messages
 	let messageContent: React.ReactNode;
 	let shouldCollapse = false;
-	let totalLines = 0;
-	let previewLines = 0;
+	let totalChars = 0;
+	let remainingChars = 0;
 
 	if (typeof message === 'string') {
-		const lines = message.split('\n');
-		totalLines = lines.length;
-		shouldCollapse = totalLines > PREVIEW_LINES;
+		totalChars = message.length;
+		shouldCollapse = totalChars > PREVIEW_CHARS;
 
 		if (shouldCollapse && !isExpanded) {
-			// Show only first N lines
-			const preview = lines.slice(0, PREVIEW_LINES).join('\n');
-			previewLines = totalLines - PREVIEW_LINES;
+			// Show only first N characters
+			const preview = message.slice(0, PREVIEW_CHARS);
+			remainingChars = totalChars - PREVIEW_CHARS;
 			messageContent = (
 				<>
 					<Text color={colors.white} dimColor>
 						{preview}
 					</Text>
-					<Text color={colors.muted}>
-						{'\n'}... {previewLines} more line{previewLines !== 1 ? 's' : ''}{' '}
+					<Text color={colors.muted} dimColor>
+						... {remainingChars} more character{remainingChars !== 1 ? 's' : ''}{' '}
 						(Press Ctrl+O to expand)
 					</Text>
 				</>
 			);
 		} else {
-			messageContent = <Text color={colors.white}>{message}</Text>;
+			messageContent = (
+				<Text color={colors.white} dimColor>
+					{message}
+				</Text>
+			);
 		}
 	} else {
 		messageContent = message;

@@ -42,6 +42,9 @@ export interface AppConfig {
 		apiKey: string;
 	};
 
+	// Assistant name
+	assistantName?: string;
+
 	// Providers array structure - all OpenAI compatible
 	providers?: {
 		name: string;
