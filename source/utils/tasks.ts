@@ -322,6 +322,7 @@ export function renumberTasks(tasks: Task[]): Task[] {
 export async function getTaskSyncData(): Promise<{
 	content: string;
 	sessionId: string;
+	weekId: string;
 }> {
 	const filePath = getCurrentWeekFilePath();
 	const weekFileName = getCurrentWeekFile(); // e.g., "2025-W48.md"
@@ -340,6 +341,7 @@ export async function getTaskSyncData(): Promise<{
 		return {
 			content: emptyMarkdown,
 			sessionId: `tasks-${weekId}`,
+			weekId,
 		};
 	}
 
@@ -349,6 +351,7 @@ export async function getTaskSyncData(): Promise<{
 	return {
 		content,
 		sessionId: `tasks-${weekId}`,
+		weekId,
 	};
 }
 
@@ -363,7 +366,7 @@ export async function syncTasksToCore(): Promise<void> {
 	}
 
 	try {
-		const {content, sessionId} = await getTaskSyncData();
+		const {content, sessionId, weekId} = await getTaskSyncData();
 
 		const payload = {
 			episodeBody: content,
@@ -371,6 +374,7 @@ export async function syncTasksToCore(): Promise<void> {
 			sessionId,
 			source: 'cli',
 			type: 'DOCUMENT',
+			title: weekId,
 		};
 
 		await fetch(`${appConfig.auth.url}/api/v1/add`, {

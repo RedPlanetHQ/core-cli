@@ -79,6 +79,7 @@ export default function ToolConfirmation({
 			}
 
 			const formatter = toolFormatters[toolCall.function.name];
+
 			if (formatter) {
 				setIsLoadingPreview(true);
 				try {
@@ -95,6 +96,10 @@ export default function ToolConfirmation({
 				} finally {
 					setIsLoadingPreview(false);
 				}
+			} else {
+				setFormatterPreview(
+					JSON.stringify(toolCall.function.arguments, null, 2),
+				);
 			}
 		};
 
@@ -150,7 +155,9 @@ export default function ToolConfirmation({
 							{React.isValidElement(formatterPreview) ? (
 								formatterPreview
 							) : (
-								<Text color={colors.white}>{String(formatterPreview)}</Text>
+								<Text color={colors.white} dimColor>
+									{String(formatterPreview)}
+								</Text>
 							)}
 						</Box>
 					</Box>

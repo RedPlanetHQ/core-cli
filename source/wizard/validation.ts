@@ -130,6 +130,7 @@ export async function testProviderConnection(
 
 interface ConfigObject {
 	core: {
+		assistantName?: string;
 		auth?: {
 			url: string;
 			apiKey: string;
@@ -178,6 +179,7 @@ export function buildConfigObject(
 	providers: ProviderConfig[],
 	mcpServers: Record<string, McpServerConfig>,
 	auth?: CoreAuthConfig | null,
+	assistantName?: string | null,
 ): ConfigObject {
 	const config: ConfigObject = {
 		core: {
@@ -214,6 +216,11 @@ export function buildConfigObject(
 			}),
 		},
 	};
+
+	// Add assistant name if provided
+	if (assistantName) {
+		config.core.assistantName = assistantName;
+	}
 
 	// Add auth if provided
 	if (auth) {

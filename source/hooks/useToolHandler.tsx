@@ -174,6 +174,7 @@ export function useToolHandler({
 
 			// Run validator if available
 			const validator = toolManager.getToolValidator(currentTool.function.name);
+
 			if (validator) {
 				try {
 					const parsedArgs = parseToolArguments(currentTool.function.arguments);

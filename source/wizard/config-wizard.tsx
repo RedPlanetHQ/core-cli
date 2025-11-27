@@ -17,7 +17,6 @@ import {getConfigPath} from '@/config/paths';
 import {useResponsiveTerminal} from '@/hooks/useTerminalWidth';
 import {ProviderStep} from './steps/provider-step';
 import {join} from 'node:path';
-import {getAssistantName, saveAssistantName} from '@/config/preferences';
 
 interface ConfigWizardProps {
 	projectDir: string;
@@ -40,6 +39,7 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 	const configPath = join(getConfigPath(), 'config.json');
 	const [step, setStep] = useState<WizardStep>('auth');
 	const [auth, setAuth] = useState<CoreAuthConfig | null>(null);
+	const [assistantName, setAssistantName] = useState<string | null>(null);
 	const [providers, setProviders] = useState<ProviderConfig[]>([]);
 	const [mcpServers, setMcpServers] = useState<Record<string, McpServerConfig>>(
 		{},
@@ -59,6 +59,7 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 					const configContent = readFileSync(configPath, 'utf-8');
 					const config = JSON.parse(configContent) as {
 						core?: {
+							assistantName?: string;
 							auth?: CoreAuthConfig;
 							providers?: ProviderConfig[];
 							mcpServers?: Array<McpServerConfig>;
@@ -66,6 +67,7 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 					};
 
 					const newAuth = config.core?.auth || null;
+					const newAssistantName = config.core?.assistantName || null;
 					const newProviders = config.core?.providers || [];
 
 					// Convert mcpServers array to Record<string, McpServerConfig>
@@ -77,6 +79,7 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 					}
 
 					setAuth(newAuth);
+					setAssistantName(newAssistantName);
 					setProviders(newProviders);
 					setMcpServers(newMcpServers);
 				}
@@ -92,8 +95,8 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 	};
 
 	const handleAssistantNameComplete = (name: string) => {
-		// Save assistant name to preferences
-		saveAssistantName(name);
+		// Store assistant name in state (will be saved with the rest of the config)
+		setAssistantName(name);
 		setStep('providers');
 	};
 
@@ -114,8 +117,8 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 		setError(null);
 
 		try {
-			// Build config object with auth (Core MCP will be handled internally)
-			const config = buildConfigObject(providers, mcpServers, auth);
+			// Build config object with auth and assistant name (Core MCP will be handled internally)
+			const config = buildConfigObject(providers, mcpServers, auth, assistantName);
 
 			// Ensure directory exists
 			const dir = dirname(configPath);
@@ -153,7 +156,7 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 	const openInEditor = () => {
 		try {
 			// Save current progress to file (Core MCP will be handled internally)
-			const config = buildConfigObject(providers, mcpServers, auth);
+			const config = buildConfigObject(providers, mcpServers, auth, assistantName);
 
 			// Ensure directory exists
 			const dir = dirname(configPath);
@@ -191,6 +194,7 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 					const editedContent = readFileSync(configPath, 'utf-8');
 					const editedConfig = JSON.parse(editedContent) as {
 						core?: {
+							assistantName?: string;
 							auth?: CoreAuthConfig;
 							providers?: ProviderConfig[];
 							mcpServers?: Array<McpServerConfig>;
@@ -200,6 +204,7 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 					// Update state with edited values
 					if (editedConfig.core) {
 						setAuth(editedConfig.core.auth || null);
+						setAssistantName(editedConfig.core.assistantName || null);
 						setProviders(editedConfig.core.providers || []);
 
 						// Convert mcpServers array to Record<string, McpServerConfig>
@@ -285,7 +290,7 @@ export function ConfigWizard({onComplete, onCancel}: ConfigWizardProps) {
 			case 'assistantName': {
 				return (
 					<AssistantNameStep
-						existingName={getAssistantName()}
+						existingName={assistantName || undefined}
 						onComplete={handleAssistantNameComplete}
 						onBack={() => setStep('auth')}
 					/>

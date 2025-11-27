@@ -80,12 +80,12 @@ export function getAssistantName(): string | undefined {
 	try {
 		const configPath = join(getConfigPath(), 'config.json');
 		if (!existsSync(configPath)) {
-			return undefined;
+			return 'Core';
 		}
 
 		const configContent = readFileSync(configPath, 'utf-8');
 		const config = JSON.parse(configContent) as {core?: AppConfig};
-		return config.core?.assistantName;
+		return config.core?.assistantName ?? 'Core';
 	} catch (error) {
 		logError(`Failed to load assistant name: ${String(error)}`);
 		return undefined;

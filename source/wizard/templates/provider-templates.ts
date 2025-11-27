@@ -168,7 +168,7 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 			{
 				name: 'model',
 				prompt: 'Model name(s) (comma-separated)',
-				default: 'gpt-5-codex',
+				default: 'gpt-4.1-2025-04-14',
 				required: true,
 			},
 			{
