@@ -62,6 +62,7 @@ export default function UserInput({
 	// Task mode state
 	const [isTaskMode, setIsTaskMode] = useState<boolean>(false);
 	const [taskAddedMessage, setTaskAddedMessage] = useState<string>('');
+	const [taskRefreshKey, setTaskRefreshKey] = useState<number>(0);
 
 	// Responsive placeholder text
 	const defaultPlaceholder = isNarrow
@@ -224,6 +225,7 @@ export default function UserInput({
 
 				setTaskAddedMessage(`Task #${taskNumber} added successfully!`);
 				setTimeout(() => setTaskAddedMessage(''), 3000);
+				setTaskRefreshKey(prev => prev + 1);
 
 				resetInput();
 				setIsTaskMode(false);
@@ -652,7 +654,11 @@ export default function UserInput({
 			</Box>
 
 			{/* Status bar with development mode, MCP status, and task counts */}
-			<StatusBar developmentMode={developmentMode} mcpStatus={mcpStatus} />
+			<StatusBar
+				key={taskRefreshKey}
+				developmentMode={developmentMode}
+				mcpStatus={mcpStatus}
+			/>
 		</Box>
 	);
 }
