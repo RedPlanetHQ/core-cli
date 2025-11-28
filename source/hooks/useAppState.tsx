@@ -74,6 +74,9 @@ export function useAppState() {
 	const [developmentMode, setDevelopmentMode] =
 		useState<DevelopmentMode>('normal');
 
+	// Incognito mode state
+	const [isIncognitoMode, setIsIncognitoMode] = useState<boolean>(false);
+
 	// Tool confirmation state
 	const [pendingToolCalls, setPendingToolCalls] = useState<ToolCall[]>([]);
 	const [currentToolIndex, setCurrentToolIndex] = useState<number>(0);
@@ -164,6 +167,14 @@ export function useAppState() {
 		setCurrentConversationContext(null);
 	};
 
+	// Clear chat and force re-render by toggling startChat
+	const clearChat = useCallback(() => {
+		setChatComponents([]);
+		setStartChat(false);
+		// Use queueMicrotask to set it back to true after React processes the unmount
+		setTimeout(() => setStartChat(true), 100);
+	}, []);
+
 	return {
 		// State
 		client,
@@ -194,6 +205,7 @@ export function useAppState() {
 		isBashExecuting,
 		currentBashCommand,
 		developmentMode,
+		isIncognitoMode,
 		pendingToolCalls,
 		currentToolIndex,
 		completedToolResults,
@@ -231,6 +243,7 @@ export function useAppState() {
 		setIsBashExecuting,
 		setCurrentBashCommand,
 		setDevelopmentMode,
+		setIsIncognitoMode,
 		setPendingToolCalls,
 		setCurrentToolIndex,
 		setCompletedToolResults,
@@ -243,5 +256,6 @@ export function useAppState() {
 		getMessageTokens,
 		updateMessages,
 		resetToolConfirmationState,
+		clearChat,
 	};
 }

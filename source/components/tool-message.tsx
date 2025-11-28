@@ -87,6 +87,7 @@ export default function ToolMessage({
 							Bash Command Output
 						</Text>
 					)}
+					<Text color={colors.white}>{title}</Text>
 					{messageContent}
 					{collapseHint}
 					{isBashMode && (

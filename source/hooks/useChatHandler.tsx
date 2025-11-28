@@ -93,6 +93,7 @@ interface UseChatHandlerProps {
 	developmentMode?: 'normal' | 'auto-accept' | 'plan';
 	userProfile?: string;
 	integrations?: string;
+	isIncognitoMode?: boolean;
 	onStartToolConfirmationFlow: (
 		toolCalls: ToolCall[],
 		updatedMessages: Message[],
@@ -116,6 +117,7 @@ export function useChatHandler({
 	developmentMode = 'normal',
 	userProfile,
 	integrations,
+	isIncognitoMode = false,
 	onStartToolConfirmationFlow,
 }: UseChatHandlerProps) {
 	// Conversation state manager for enhanced context
@@ -131,6 +133,11 @@ export function useChatHandler({
 	// Function to save episode to Core API
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const saveEpisode = async (userMsg: string, assistantMsg: string) => {
+		// Skip saving if in incognito mode
+		if (isIncognitoMode) {
+			return;
+		}
+
 		// Get session ID from tracker
 		const currentSession = getCurrentSession();
 		const sessionId = currentSession?.getSessionInfo().id;

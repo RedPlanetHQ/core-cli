@@ -10,3 +10,4 @@ export * from './mcp';
 export * from './set-name';
 export * from './update';
 export * from './tasks';
+export * from './incognito';

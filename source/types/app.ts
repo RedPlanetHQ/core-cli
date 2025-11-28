@@ -11,6 +11,7 @@ export interface MessageSubmissionOptions {
 	onEnterRecommendationsMode: () => void;
 	onEnterConfigWizardMode: () => void;
 	onShowStatus: () => void;
+	onToggleIncognitoMode: () => void;
 	onHandleChatMessage: (message: string) => Promise<void>;
 	onAddToChatQueue: (component: React.ReactNode) => void;
 	componentKeyCounter: number;
@@ -23,4 +24,5 @@ export interface MessageSubmissionOptions {
 	theme: string;
 	updateInfo: UpdateInfo | null;
 	getMessageTokens: (message: Message) => number;
+	isIncognitoMode: boolean;
 }

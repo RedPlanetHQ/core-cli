@@ -1,4 +1,4 @@
-import {Box, Static} from 'ink';
+import {Box} from 'ink';
 import {useMemo, Fragment, memo} from 'react';
 import type {ChatQueueProps} from '@/types/index';
 
@@ -16,21 +16,12 @@ export default memo(function ChatQueue({
 	return (
 		<Box flexDirection="column" gap={2}>
 			{/* All content is static to prevent re-renders */}
-			{allStaticComponents.length > 0 && (
-				<Static items={allStaticComponents}>
-					{(component, index) => {
-						const key =
-							component &&
-							typeof component === 'object' &&
-							'key' in component &&
-							component.key
-								? component.key
-								: `static-${index}`;
-
-						return <Fragment key={key}>{component}</Fragment>;
-					}}
-				</Static>
-			)}
+			<Box flexDirection="column">
+				{allStaticComponents.length > 0 &&
+					allStaticComponents.map((component, index) => (
+						<Fragment key={index}>{component}</Fragment>
+					))}
+			</Box>
 		</Box>
 	);
 });

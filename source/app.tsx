@@ -104,6 +104,7 @@ export default function App() {
 		developmentMode: appState.developmentMode,
 		userProfile: appState.userProfile,
 		integrations: appState.integrations,
+		isIncognitoMode: appState.isIncognitoMode,
 		onStartToolConfirmationFlow: (
 			toolCalls,
 			updatedMessages,
@@ -146,8 +147,13 @@ export default function App() {
 
 	// Memoize handlers to prevent unnecessary re-renders
 	const clearMessages = React.useMemo(
-		() => createClearMessagesHandler(appState.updateMessages, appState.client),
-		[appState.updateMessages, appState.client],
+		() =>
+			createClearMessagesHandler(
+				appState.updateMessages,
+				appState.client,
+				appState.clearChat,
+			),
+		[appState.updateMessages, appState.client, appState.clearChat],
 	);
 
 	const handleShowStatus = React.useCallback(() => {
@@ -162,6 +168,15 @@ export default function App() {
 		);
 	}, [appState]);
 
+	const handleToggleIncognitoMode = React.useCallback(() => {
+		appState.setIsIncognitoMode(!appState.isIncognitoMode);
+		appState.addToChatQueue(
+			<Text key={`incognito-${appState.componentKeyCounter}`} color="gray">
+				Incognito mode {!appState.isIncognitoMode ? 'enabled' : 'disabled'}. Episodes will {!appState.isIncognitoMode ? 'not ' : ''}be saved.
+			</Text>,
+		);
+	}, [appState]);
+
 	const handleMessageSubmit = React.useCallback(
 		async (message: string) => {
 			await handleMessageSubmission(message, {
@@ -173,6 +188,7 @@ export default function App() {
 				onEnterRecommendationsMode: modeHandlers.enterRecommendationsMode,
 				onEnterConfigWizardMode: modeHandlers.enterConfigWizardMode,
 				onShowStatus: handleShowStatus,
+				onToggleIncognitoMode: handleToggleIncognitoMode,
 				onHandleChatMessage: chatHandler.handleChatMessage,
 				onAddToChatQueue: appState.addToChatQueue,
 				componentKeyCounter: appState.componentKeyCounter,
@@ -185,6 +201,7 @@ export default function App() {
 				theme: appState.currentTheme,
 				updateInfo: appState.updateInfo,
 				getMessageTokens: appState.getMessageTokens,
+				isIncognitoMode: appState.isIncognitoMode,
 			});
 		},
 		[
@@ -196,6 +213,7 @@ export default function App() {
 			modeHandlers.enterConfigWizardMode,
 			modeHandlers.enterNameSelectionMode,
 			handleShowStatus,
+			handleToggleIncognitoMode,
 			chatHandler.handleChatMessage,
 			appState.addToChatQueue,
 			appState.componentKeyCounter,
@@ -208,6 +226,7 @@ export default function App() {
 			appState.currentTheme,
 			appState.updateInfo,
 			appState.getMessageTokens,
+			appState.isIncognitoMode,
 		],
 	);
 
@@ -334,6 +353,7 @@ export default function App() {
 									onToggleMode={handleToggleDevelopmentMode}
 									developmentMode={appState.developmentMode}
 									mcpStatus={appState.mcpStatus}
+									isIncognitoMode={appState.isIncognitoMode}
 								/>
 							) : appState.mcpInitialized && !appState.client ? (
 								<></>

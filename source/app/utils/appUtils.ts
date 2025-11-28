@@ -21,6 +21,7 @@ export async function handleMessageSubmission(
 		onEnterNameSelectionMode,
 		onEnterConfigWizardMode,
 		onShowStatus,
+		onToggleIncognitoMode,
 		onHandleChatMessage,
 		onAddToChatQueue,
 		componentKeyCounter,
@@ -119,7 +120,7 @@ ${result.fullOutput || '(No output)'}`;
 		// Handle special commands that need app state access
 		if (commandName === 'clear') {
 			await onClearMessages();
-			// Still show the clear command result
+			return;
 		} else if (commandName === 'model') {
 			onEnterModelSelectionMode();
 			return;
@@ -137,6 +138,9 @@ ${result.fullOutput || '(No output)'}`;
 			return;
 		} else if (commandName === 'status') {
 			onShowStatus();
+			return;
+		} else if (commandName === 'incognito') {
+			onToggleIncognitoMode();
 			return;
 		}
 
@@ -180,6 +184,7 @@ ${result.fullOutput || '(No output)'}`;
 export function createClearMessagesHandler(
 	setMessages: (messages: Message[]) => void,
 	client: LLMClient | null,
+	clearChat: () => void,
 ) {
 	return async () => {
 		// Clear message history and client context
@@ -187,6 +192,9 @@ export function createClearMessagesHandler(
 		if (client) {
 			await client.clearContext();
 		}
+
+		// Clear chat UI components and toggle startChat to force remount
+		clearChat();
 
 		// Generate a new session ID by reinitializing the session
 		const currentSession = getCurrentSession();

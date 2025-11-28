@@ -27,6 +27,7 @@ interface ChatProps {
 	onToggleMode?: () => void; // Callback when user presses shift+tab to toggle development mode
 	developmentMode?: DevelopmentMode; // Current development mode
 	mcpStatus?: string | null; // MCP connection status
+	isIncognitoMode?: boolean; // Incognito mode status
 }
 
 export default function UserInput({
@@ -38,6 +39,7 @@ export default function UserInput({
 	onToggleMode,
 	developmentMode = 'normal',
 	mcpStatus = null,
+	isIncognitoMode = false,
 }: ChatProps) {
 	const {isFocused, focus} = useFocus({autoFocus: !disabled, id: 'user-input'});
 	const {colors} = useTheme();
@@ -430,6 +432,50 @@ export default function UserInput({
 			return;
 		}
 
+		// Ctrl+U (or Cmd+Delete on Mac) - Clear line
+		if (key.ctrl && inputChar === 'u') {
+			// Remove the 'u' that was just added by checking if input ends with 'u'
+			const targetState = {
+				displayValue: '',
+				placeholderContent: {},
+			};
+
+			setTextInputKey(prev => prev + 1);
+
+			// Use setTimeout to ensure state is applied after TextInput processes the key
+			queueMicrotask(() => {
+				setInputState(targetState);
+			});
+			return;
+		}
+
+		// Ctrl+W (or Option+Delete on Mac) - Delete last word
+		if (key.ctrl && inputChar === 'w') {
+			// Split only the displayValue, not the full input with placeholders
+			const words = currentState.displayValue.trimEnd().split(/\s+/);
+			let targetState;
+			if (words.length > 1) {
+				words.pop();
+				const newDisplayValue = words.join(' ') + ' ';
+				targetState = {
+					displayValue: newDisplayValue,
+					placeholderContent: currentState.placeholderContent,
+				};
+			} else {
+				targetState = {
+					displayValue: '',
+					placeholderContent: currentState.placeholderContent,
+				};
+			}
+			setTextInputKey(prev => prev + 1);
+
+			// Use setTimeout to ensure state is applied after TextInput processes the key
+			queueMicrotask(() => {
+				setInputState(targetState);
+			});
+			return;
+		}
+
 		// Handle special keys
 		if (key.escape) {
 			handleEscape();
@@ -658,6 +704,7 @@ export default function UserInput({
 				key={taskRefreshKey}
 				developmentMode={developmentMode}
 				mcpStatus={mcpStatus}
+				isIncognitoMode={isIncognitoMode}
 			/>
 		</Box>
 	);

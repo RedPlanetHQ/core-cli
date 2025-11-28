@@ -8,11 +8,13 @@ import {TaskState} from '@/types/tasks';
 interface StatusBarProps {
 	developmentMode: DevelopmentMode;
 	mcpStatus?: string | null;
+	isIncognitoMode?: boolean;
 }
 
 export default function StatusBar({
 	developmentMode,
 	mcpStatus = null,
+	isIncognitoMode = false,
 }: StatusBarProps) {
 	const {colors} = useTheme();
 	const [taskCounts, setTaskCounts] = useState({todo: 0, inProgress: 0});
@@ -58,6 +60,13 @@ export default function StatusBar({
 						}
 					>
 						{mcpStatus}
+					</Text>
+				)}
+
+				{/* Incognito mode indicator */}
+				{isIncognitoMode && (
+					<Text color={colors.warning}>
+						<Text bold>Incognito</Text>
 					</Text>
 				)}
 			</Box>

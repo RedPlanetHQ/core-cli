@@ -24,6 +24,7 @@ import {
 	setNameCommand,
 	updateCommand,
 	tasksCommand,
+	incognitoCommand,
 } from '@/commands/index';
 import InfoMessage from '@/components/info-message';
 import ErrorMessage from '@/components/error-message';
@@ -267,6 +268,7 @@ export function useAppInitialization({
 				setNameCommand,
 				updateCommand,
 				tasksCommand,
+				incognitoCommand,
 			]);
 
 			// Now start with the properly initialized objects (excluding MCP)
