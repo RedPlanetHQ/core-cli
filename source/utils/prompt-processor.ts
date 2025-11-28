@@ -49,12 +49,17 @@ function generateSystemInfo(): string {
 	const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
 	const timeStr = now.toTimeString().split(' ')[0]; // HH:MM:SS
 
+	// Get timezone information
+	const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+	const timeZoneOffset = now.toTimeString().split(' ')[1]; // e.g., GMT+0530
+
 	return `Operating System: ${getOSName()}
 OS Version: ${release()}
 Platform: ${platform()}
 Default Shell: ${getDefaultShell()}
 Current Date: ${dateStr}
-Current Time: ${timeStr}`;
+Current Time: ${timeStr}
+Time Zone: ${timeZone} (${timeZoneOffset})`;
 }
 
 /**

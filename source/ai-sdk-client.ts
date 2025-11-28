@@ -1,7 +1,7 @@
-import {createOpenAICompatible} from '@ai-sdk/openai-compatible';
-import {generateText, streamText} from 'ai';
-import type {ModelMessage} from 'ai';
-import {Agent, fetch as undiciFetch} from 'undici';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { generateText, streamText } from 'ai';
+import type { ModelMessage } from 'ai';
+import { Agent, fetch as undiciFetch } from 'undici';
 import type {
 	AIProviderConfig,
 	LLMChatResponse,
@@ -11,8 +11,8 @@ import type {
 	AISDKCoreTool,
 	StreamCallbacks,
 } from '@/types/index';
-import {XMLToolCallParser} from '@/tool-calling/xml-parser';
-import {getModelContextLimit} from '@/models/index.js';
+import { XMLToolCallParser } from '@/tool-calling/xml-parser';
+import { getModelContextLimit } from '@/models/index.js';
 
 /**
  * Parses API errors into user-friendly messages
@@ -96,28 +96,28 @@ function convertToModelMessages(messages: Message[]): ModelMessage[] {
 			const toolName = msg.name || 'unknown_tool';
 			return {
 				role: 'user',
-				content: `[Tool: ${toolName}]\n${msg.content}`,
+				content: `[Tool: ${toolName}]\n${msg.content || ''}`,
 			};
 		}
 
 		if (msg.role === 'system') {
 			return {
 				role: 'system',
-				content: msg.content,
+				content: msg.content || '',
 			};
 		}
 
 		if (msg.role === 'user') {
 			return {
 				role: 'user',
-				content: msg.content,
+				content: msg.content || '',
 			};
 		}
 
 		if (msg.role === 'assistant') {
 			return {
 				role: 'assistant',
-				content: msg.content,
+				content: msg.content || '',
 				// Note: tool_calls are handled separately by AI SDK
 				// They come from the response, not the input messages
 			};
@@ -126,7 +126,7 @@ function convertToModelMessages(messages: Message[]): ModelMessage[] {
 		// Fallback - should never happen
 		return {
 			role: 'user',
-			content: msg.content,
+			content: msg.content || '',
 		};
 	});
 }
@@ -145,13 +145,13 @@ export class AISDKClient implements LLMClient {
 		this.currentModel = providerConfig.models[0] || '';
 		this.cachedContextSize = 0;
 
-		const {requestTimeout, socketTimeout, connectionPool} = this.providerConfig;
+		const { requestTimeout, socketTimeout, connectionPool } = this.providerConfig;
 		const resolvedSocketTimeout =
 			socketTimeout === -1
 				? 0
 				: socketTimeout || requestTimeout === -1
-				? 0
-				: requestTimeout || 120000;
+					? 0
+					: requestTimeout || 120000;
 
 		this.undiciAgent = new Agent({
 			connect: {
@@ -188,7 +188,7 @@ export class AISDKClient implements LLMClient {
 	}
 
 	private createProvider(): ReturnType<typeof createOpenAICompatible> {
-		const {config} = this.providerConfig;
+		const { config } = this.providerConfig;
 
 		// Custom fetch using undici
 		const customFetch = (
@@ -384,6 +384,9 @@ export class AISDKClient implements LLMClient {
 				messages: modelMessages,
 				tools: aiTools,
 				abortSignal: signal,
+				providerOptions: {
+					openai: { reasoningEffort: "medium" }
+				}
 			});
 
 			// Stream tokens
