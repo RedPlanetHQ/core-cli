@@ -83,12 +83,21 @@ export function useToolHandler({
 
 		// Update conversation history with tool results
 		// The assistantMsg is NOT included in updatedMessages (updatedMessages is the state before adding assistantMsg)
-		// We need to add both the assistant message and the tool results
-		const updatedMessagesWithTools = [
-			...updatedMessages,
-			assistantMsg, // Add the assistant message with tool_calls intact for proper tool_call_id matching
-			...toolMessages,
-		];
+		// For Claude: Only include assistant message if it has actual content
+		// If it's just whitespace (tool calls with no text), skip it and just add tool results
+		const shouldIncludeAssistantMsg = assistantMsg.content.trim().length > 0;
+
+		const updatedMessagesWithTools = shouldIncludeAssistantMsg
+			? [
+					...updatedMessages,
+					assistantMsg, // Add the assistant message with tool_calls intact for proper tool_call_id matching
+					...toolMessages,
+			  ]
+			: [
+					...updatedMessages,
+					...toolMessages, // Just add tool results without the empty assistant message
+			  ];
+
 		setMessages(updatedMessagesWithTools);
 
 		// Reset tool confirmation state since we're continuing the conversation

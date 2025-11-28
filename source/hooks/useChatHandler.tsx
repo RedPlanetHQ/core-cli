@@ -274,9 +274,11 @@ export function useChatHandler({
 			);
 
 			// Add assistant message to conversation history
+			// When assistant has tool calls but no text content, use a minimal placeholder
+			// to satisfy both Claude and OpenAI requirements
 			const assistantMsg: Message = {
 				role: 'assistant',
-				content: cleanedContent,
+				content: cleanedContent || (validToolCalls.length > 0 ? ' ' : ''),
 				tool_calls: validToolCalls.length > 0 ? validToolCalls : undefined,
 			};
 			setMessages([...messages, assistantMsg]);
