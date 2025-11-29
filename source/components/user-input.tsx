@@ -265,7 +265,7 @@ export default function UserInput({
 			input.startsWith('/') &&
 			onSubmit
 		) {
-			const completion = completions[selectedCommandIndex];
+			const completion = completions[selectedCommandIndex ?? 0];
 			const completedText = `/${completion.name} `;
 			const fullMessage = assemblePrompt({
 				displayValue: completedText,

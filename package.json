@@ -1,7 +1,7 @@
 {
 	"name": "@redplanethq/core-cli",
 	"main": "dist/cli.js",
-	"version": "0.2.3",
+	"version": "0.2.5",
 	"description": "",
 	"keywords": [
 		"cli",

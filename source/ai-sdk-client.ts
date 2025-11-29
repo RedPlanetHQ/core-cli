@@ -1,7 +1,7 @@
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { generateText, streamText } from 'ai';
-import type { ModelMessage } from 'ai';
-import { Agent, fetch as undiciFetch } from 'undici';
+import {createOpenAICompatible} from '@ai-sdk/openai-compatible';
+import {generateText, streamText} from 'ai';
+import type {ModelMessage} from 'ai';
+import {Agent, fetch as undiciFetch} from 'undici';
 import type {
 	AIProviderConfig,
 	LLMChatResponse,
@@ -11,8 +11,8 @@ import type {
 	AISDKCoreTool,
 	StreamCallbacks,
 } from '@/types/index';
-import { XMLToolCallParser } from '@/tool-calling/xml-parser';
-import { getModelContextLimit } from '@/models/index.js';
+import {XMLToolCallParser} from '@/tool-calling/xml-parser';
+import {getModelContextLimit, modelSupportsReasoning} from '@/models/index.js';
 
 /**
  * Parses API errors into user-friendly messages
@@ -145,13 +145,13 @@ export class AISDKClient implements LLMClient {
 		this.currentModel = providerConfig.models[0] || '';
 		this.cachedContextSize = 0;
 
-		const { requestTimeout, socketTimeout, connectionPool } = this.providerConfig;
+		const {requestTimeout, socketTimeout, connectionPool} = this.providerConfig;
 		const resolvedSocketTimeout =
 			socketTimeout === -1
 				? 0
 				: socketTimeout || requestTimeout === -1
-					? 0
-					: requestTimeout || 120000;
+				? 0
+				: requestTimeout || 120000;
 
 		this.undiciAgent = new Agent({
 			connect: {
@@ -188,7 +188,7 @@ export class AISDKClient implements LLMClient {
 	}
 
 	private createProvider(): ReturnType<typeof createOpenAICompatible> {
-		const { config } = this.providerConfig;
+		const {config} = this.providerConfig;
 
 		// Custom fetch using undici
 		const customFetch = (
@@ -378,15 +378,19 @@ export class AISDKClient implements LLMClient {
 			// Convert messages to AI SDK v5 ModelMessage format
 			const modelMessages = convertToModelMessages(messages);
 
+			// Check if the model supports reasoning and set providerOptions accordingly
+			const supportsReasoning = modelSupportsReasoning(this.currentModel);
+			const providerOptions = supportsReasoning
+				? {openai: {reasoningEffort: 'medium'}}
+				: undefined;
+
 			// Use streamText for streaming
 			const result = streamText({
 				model,
 				messages: modelMessages,
 				tools: aiTools,
 				abortSignal: signal,
-				providerOptions: {
-					openai: { reasoningEffort: "medium" }
-				}
+				providerOptions,
 			});
 
 			// Stream tokens

@@ -6,6 +6,7 @@
 import {request} from 'undici';
 import {readCache, writeCache} from './models-cache.js';
 import type {ModelsDevDatabase, ModelInfo} from './models-types.js';
+import {isReasoningModel} from './reasoning-models.js';
 
 const MODELS_DEV_API_URL = 'https://models.dev/api.json';
 
@@ -304,4 +305,14 @@ export async function getModelContextLimit(
 
 	// No context limit found
 	return null;
+}
+
+/**
+ * Check if a model supports reasoning/thinking capabilities
+ * Returns true if the model has reasoning support, false otherwise
+ */
+export function modelSupportsReasoning(modelId: string): boolean {
+	// Import the reasoning models list
+
+	return isReasoningModel(modelId);
 }

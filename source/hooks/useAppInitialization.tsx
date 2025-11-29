@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import React, {useEffect} from 'react';
 import {LLMClient} from '@/types/core';
 import {ToolManager} from '@/tools/tool-manager';
@@ -97,22 +98,18 @@ export function useAppInitialization({
 	};
 
 	// Validate Core API key
-	const validateCoreAuth = (
+	const validateCoreAuth = async (
 		auth: {url: string; apiKey: string} | undefined,
 	) => {
 		if (!auth) return false;
 
 		try {
-			// TODO: Uncomment when /api/v1/me endpoint is ready
-			// const response = await fetch(`${auth.url}/api/v1/me`, {
-			// 	headers: {
-			// 		Authorization: `Bearer ${auth.apiKey}`,
-			// 	},
-			// });
-			// return response.ok;
-
-			// For now, return true (assume valid)
-			return true;
+			const response = await fetch(`${auth.url}/api/v1/me`, {
+				headers: {
+					Authorization: `Bearer ${auth.apiKey}`,
+				},
+			});
+			return response.ok;
 		} catch {
 			return false;
 		}
@@ -124,7 +121,7 @@ export function useAppInitialization({
 
 		// Add Core MCP server internally if auth is available
 		if (appConfig.auth) {
-			const isValid = validateCoreAuth(appConfig.auth);
+			const isValid = await validateCoreAuth(appConfig.auth);
 			if (isValid) {
 				servers.push({
 					name: 'core',
@@ -161,19 +158,27 @@ export function useAppInitialization({
 			try {
 				await toolManager.initializeMCP(servers, onProgress);
 
-				// Fetch user profile and integrations from Core MCP if it's connected
+				// Fetch user profile and integrations from Core API if authenticated
 				if (appConfig.auth) {
 					try {
-						// Get the tool handler for calling MCP tools
-						const toolHandler = toolManager.getToolHandler('memory_about_user');
+						// Fetch user profile from /api/v1/me
+						const meResponse = await fetch(`${appConfig.auth.url}/api/v1/me`, {
+							headers: {
+								Authorization: `Bearer ${appConfig.auth.apiKey}`,
+							},
+						});
+
+						if (meResponse.ok) {
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+							const meData = (await meResponse.json()) as any;
+							if (meData.persona) {
+								setUserProfile(meData.persona as string);
+							}
+						}
+
+						// Get the tool handler for integrations
 						const integrationsHandler =
 							toolManager.getToolHandler('get_integrations');
-
-						// Call memory_about_user
-						if (toolHandler) {
-							const profileResult = await toolHandler({});
-							setUserProfile(profileResult);
-						}
 
 						// Call get_integrations
 						if (integrationsHandler) {
