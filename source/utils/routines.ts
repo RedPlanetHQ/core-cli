@@ -29,10 +29,18 @@ export interface DocumentFullItem {
 	source: string;
 }
 
+// Cache for routines
+let routinesCache: Routine[] | null = null;
+
 /**
  * Get all available routines from the routines directory and MCP core server
+ * Results are cached after first call. Cache is cleared at the start of this function
+ * so each call to getRoutines() fetches fresh data, but getRoutine() uses the cache.
  */
 export async function getRoutines(): Promise<Routine[]> {
+	// Clear cache to fetch fresh routines
+	routinesCache = null;
+
 	const routines: Routine[] = [];
 
 	// Get routines from local files
@@ -122,24 +130,26 @@ export async function getRoutines(): Promise<Routine[]> {
 		console.error('Failed to fetch routines from MCP core server:', error);
 	}
 
-	return routines.sort((a, b) => a.name.localeCompare(b.name));
+	// Cache the routines before returning
+	routinesCache = routines.sort((a, b) => a.name.localeCompare(b.name));
+	return routinesCache;
 }
 
 /**
  * Get a specific routine by name
+ * Searches both local files and MCP core server documents
  */
-export async function getRoutine(name: string): Promise<Routine | null> {
-	try {
-		const filePath = path.join(routinesDir, `${name}.md`);
-		const content = await fs.readFile(filePath, 'utf-8');
-
-		return {
-			name,
-			content: content.trim(),
-		};
-	} catch {
+export function getRoutine(name: string): Routine | null {
+	if (!routinesCache) {
 		return null;
 	}
+
+	// Find the routine by name (case-insensitive)
+	const routine = routinesCache.find(
+		r => r.name.toLowerCase() === name.toLowerCase(),
+	);
+
+	return routine || null;
 }
 
 /**

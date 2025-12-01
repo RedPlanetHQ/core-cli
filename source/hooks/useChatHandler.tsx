@@ -22,6 +22,7 @@ import React from 'react';
 import {appConfig} from '@/config/index';
 import {getCurrentSession} from '@/usage/tracker';
 import {getAssistantName} from '@/config/preferences';
+import {getRoutine} from '@/utils/routines';
 
 // Helper function to filter out invalid tool calls and deduplicate by ID and function
 // Returns valid tool calls and error results for invalid ones
@@ -656,16 +657,13 @@ export function useChatHandler({
 
 		// Replace @routine patterns with actual routine content before sending to LLM
 		let processedMessage = message;
-		const routinePattern = /@(\w+)/g;
+		const routinePattern = /@([^\s]+)/g;
 		const routineMatches = [...message.matchAll(routinePattern)];
-
-		// Dynamically import routine utilities
-		const {getRoutine} = await import('@/utils/routines');
 
 		// Fetch and replace all routines
 		for (const match of routineMatches) {
 			const routineName = match[1];
-			const routine = await getRoutine(routineName);
+			const routine = getRoutine(routineName);
 
 			if (routine) {
 				// Replace @routineName with the routine content

@@ -394,18 +394,12 @@ export async function getTaskSyncData(): Promise<{
 		await mkdir(tasksDir, {recursive: true});
 	}
 
-	// If file doesn't exist, create default empty file
+	// If file doesn't exist, use readWeekTasks to trigger migration
 	if (!existsSync(filePath)) {
-		const emptyMarkdown = writeTasksToMarkdown([]);
-		await writeFile(filePath, emptyMarkdown, 'utf-8');
-		return {
-			content: emptyMarkdown,
-			sessionId: `tasks-${weekId}`,
-			weekId,
-		};
+		await readWeekTasks(); // This will migrate tasks from previous week if any
 	}
 
-	// Read file content
+	// Read file content (file will exist now, either from migration or as empty)
 	const content = await readFile(filePath, 'utf-8');
 
 	return {

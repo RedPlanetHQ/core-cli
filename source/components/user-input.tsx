@@ -104,8 +104,8 @@ export default function UserInput({
 	// Check if we're in command mode (input starts with /)
 	const isCommandMode = input.trim().startsWith('/');
 
-	// Check if we're in routine mode (input contains @ followed by optional letters)
-	const routineMatch = input.match(/@(\w*)$/);
+	// Check if we're in routine mode (input contains @ followed by optional characters until space)
+	const routineMatch = input.match(/@([^\s]*)$/);
 	const isRoutineMode = routineMatch !== null;
 	const routinePrefix = routineMatch?.[1] ?? '';
 
