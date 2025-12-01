@@ -167,7 +167,7 @@ export default function ToolConfirmation({
 				{!(hasFormatterError && !hasValidationError) && (
 					<>
 						<Box marginBottom={1}>
-							<Text color={colors.primary}>
+							<Text color={colors.white}>
 								{hasValidationError
 									? 'Validation failed. Do you still want to execute this tool?'
 									: `Do you want to execute ${

@@ -11,8 +11,8 @@ interface PasteDetectionOptions {
 }
 
 const DEFAULT_PASTE_OPTIONS: PasteDetectionOptions = {
-	timeThreshold: 50, // Increased to 50ms to be more forgiving of fast typing
-	charThreshold: 5, // Lower threshold - detect pastes of 5+ chars (size method needs 10+ chars)
+	timeThreshold: 30, // Reduced to 30ms - only extremely fast input (true pastes)
+	charThreshold: 15, // Increased to 15+ chars - fast typing won't trigger this
 	lineThreshold: 2, // Multiple lines added instantly
 };
 

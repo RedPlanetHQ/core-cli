@@ -67,6 +67,17 @@ export default function App() {
 		setGlobalMessageQueue(appState.addToChatQueue);
 	}, [appState.addToChatQueue]);
 
+	// Flush queued components to static after they render
+	React.useEffect(() => {
+		if (appState.queuedChatComponents.length > 0) {
+			// Use setTimeout to ensure components have rendered first
+			const timer = setTimeout(() => {
+				appState.flushQueuedToStatic();
+			}, 0);
+			return () => clearTimeout(timer);
+		}
+	}, [appState.queuedChatComponents.length, appState.flushQueuedToStatic]);
+
 	// Setup mode handlers
 	const modeHandlers = useModeHandlers({
 		client: appState.client,
@@ -260,8 +271,8 @@ export default function App() {
 					<Box flexGrow={1} flexDirection="column" minHeight={0}>
 						{appState.startChat && (
 							<ChatQueue
-								staticComponents={staticComponents}
-								queuedComponents={appState.chatComponents}
+								staticComponents={[...staticComponents, ...appState.staticChatComponents]}
+								queuedComponents={appState.queuedChatComponents}
 							/>
 						)}
 					</Box>

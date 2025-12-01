@@ -86,8 +86,9 @@ export function useAppState() {
 	const [currentConversationContext, setCurrentConversationContext] =
 		useState<ConversationContext | null>(null);
 
-	// Chat queue for components
-	const [chatComponents, setChatComponents] = useState<React.ReactNode[]>([]);
+	// Chat queue for components - split into static (rendered) and queued (new)
+	const [staticChatComponents, setStaticChatComponents] = useState<React.ReactNode[]>([]);
+	const [queuedChatComponents, setQueuedChatComponents] = useState<React.ReactNode[]>([]);
 	const [componentKeyCounter, setComponentKeyCounter] = useState(0);
 
 	// Helper function to add components to the chat queue with stable keys
@@ -103,13 +104,25 @@ export function useAppState() {
 				});
 			}
 
-			setChatComponents(prevComponents => [
-				...prevComponents,
+			// Add to queued components
+			setQueuedChatComponents(prevQueued => [
+				...prevQueued,
 				componentWithKey,
 			]);
 		},
 		[componentKeyCounter],
 	);
+
+	// Helper function to move queued components to static (call after render)
+	const flushQueuedToStatic = useCallback(() => {
+		setQueuedChatComponents(prevQueued => {
+			if (prevQueued.length > 0) {
+				setStaticChatComponents(prevStatic => [...prevStatic, ...prevQueued]);
+				return [];
+			}
+			return prevQueued;
+		});
+	}, []);
 
 	// Create tokenizer based on current provider and model
 	const tokenizer = useMemo<Tokenizer>(() => {
@@ -169,7 +182,8 @@ export function useAppState() {
 
 	// Clear chat and force re-render by toggling startChat
 	const clearChat = useCallback(() => {
-		setChatComponents([]);
+		setStaticChatComponents([]);
+		setQueuedChatComponents([]);
 		setStartChat(false);
 		// Use queueMicrotask to set it back to true after React processes the unmount
 		setTimeout(() => setStartChat(true), 100);
@@ -210,7 +224,8 @@ export function useAppState() {
 		currentToolIndex,
 		completedToolResults,
 		currentConversationContext,
-		chatComponents,
+		staticChatComponents,
+		queuedChatComponents,
 		componentKeyCounter,
 		tokenizer,
 
@@ -248,11 +263,13 @@ export function useAppState() {
 		setCurrentToolIndex,
 		setCompletedToolResults,
 		setCurrentConversationContext,
-		setChatComponents,
+		setStaticChatComponents,
+		setQueuedChatComponents,
 		setComponentKeyCounter,
 
 		// Utilities
 		addToChatQueue,
+		flushQueuedToStatic,
 		getMessageTokens,
 		updateMessages,
 		resetToolConfirmationState,

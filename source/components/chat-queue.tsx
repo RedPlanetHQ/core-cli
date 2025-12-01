@@ -6,22 +6,26 @@ export default memo(function ChatQueue({
 	staticComponents = [],
 	queuedComponents = [],
 }: ChatQueueProps) {
-	// Move ALL messages to static - prevents any re-renders
-	// All messages are now immutable once rendered
-	const allStaticComponents = useMemo(
-		() => [...staticComponents, ...queuedComponents],
-		[staticComponents, queuedComponents],
-	);
+	// Static components never change - fully memoized
+	// Queued components are temporary and will be moved to static after render
 
 	return (
 		<Box flexDirection="column" gap={2}>
-			{/* All content is static to prevent re-renders */}
+			{/* Static content - never re-renders */}
 			<Box flexDirection="column">
-				{allStaticComponents.length > 0 &&
-					allStaticComponents.map((component, index) => (
+				{staticComponents.length > 0 &&
+					staticComponents.map((component, index) => (
 						<Fragment key={index}>{component}</Fragment>
 					))}
 			</Box>
+			{/* Queued content - renders once then moves to static */}
+			{queuedComponents.length > 0 && (
+				<Box flexDirection="column">
+					{queuedComponents.map((component, index) => (
+						<Fragment key={index}>{component}</Fragment>
+					))}
+				</Box>
+			)}
 		</Box>
 	);
 });
