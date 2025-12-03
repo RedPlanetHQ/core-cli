@@ -92,7 +92,7 @@ export function parseMarkdown(text: string, themeColors: Colors): string {
 
 	// Headings (# Heading)
 	result = result.replace(/^(#{1,6})\s+(.+)$/gm, (_match, _hashes, text) => {
-		return chalk.hex(themeColors.primary).bold(text);
+		return chalk.hex(themeColors.white).bold(text);
 	});
 
 	// Links [text](url)
@@ -106,7 +106,7 @@ export function parseMarkdown(text: string, themeColors: Colors): string {
 
 	// Blockquotes (> text)
 	result = result.replace(/^>\s+(.+)$/gm, (_match, text) => {
-		return chalk.hex(themeColors.secondary).italic(`> ${text}`);
+		return chalk.hex(themeColors.info).italic(`> ${text}`);
 	});
 
 	// Step 5: Restore code blocks and inline code from placeholders

@@ -32,8 +32,6 @@ import ErrorMessage from '@/components/error-message';
 import {checkForUpdates} from '@/utils/update-checker';
 import type {UpdateInfo} from '@/types/utils';
 import {initializeSession} from '@/usage/tracker';
-import {syncTasksToCore} from '@/utils/tasks';
-import {updateLastTaskSync} from '@/config/index';
 
 interface UseAppInitializationProps {
 	setClient: (client: LLMClient | null) => void;
@@ -185,13 +183,6 @@ export function useAppInitialization({
 							const integrationsResult = await integrationsHandler({});
 							setIntegrations(integrationsResult);
 						}
-
-						// Sync current week's tasks to Core API
-						await syncTasksToCore();
-
-						// Update last sync timestamp
-						const now = new Date().toISOString();
-						updateLastTaskSync(now);
 					} catch (error) {
 						// Silent failure - don't block initialization if these calls fail
 						console.warn(

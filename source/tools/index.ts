@@ -7,6 +7,7 @@ import {
 	listTasksTool,
 	searchTasksTool,
 } from './definitions/tasks';
+import {executeBashTool} from './execute-bash';
 
 export const toolDefinitions: ToolDefinition[] = [
 	newTaskTool,
@@ -14,6 +15,7 @@ export const toolDefinitions: ToolDefinition[] = [
 	deleteTaskTool,
 	listTasksTool,
 	searchTasksTool,
+	executeBashTool,
 ];
 
 // Export handlers for manual execution (human-in-the-loop)

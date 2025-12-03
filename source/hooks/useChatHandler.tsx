@@ -301,7 +301,10 @@ export function useChatHandler({
 				.reverse()
 				.find(msg => msg.role === 'user');
 			if (lastUserMessage && cleanedContent) {
-				void saveEpisode(lastUserMessage.content || '', cleanedContent);
+				// Use original content (before routine replacement) if available
+				const userContent =
+					lastUserMessage._originalContent || lastUserMessage.content;
+				void saveEpisode(userContent || '', cleanedContent);
 			}
 
 			// Clear streaming state after response is complete
@@ -686,7 +689,13 @@ export function useChatHandler({
 		);
 
 		// Add user message to conversation history using processed message (with routines replaced)
-		const userMessage: Message = {role: 'user', content: processedMessage};
+		// Store ORIGINAL message for episode saving (before routine replacement)
+		const userMessage: Message = {
+			role: 'user',
+			content: processedMessage,
+			// Store original message in metadata for episode saving
+			_originalContent: message,
+		};
 		const updatedMessages = [...messages, userMessage];
 		setMessages(updatedMessages);
 

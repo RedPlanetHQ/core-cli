@@ -5,7 +5,7 @@ const darkThemeColors: Colors = {
 	black: '#222222',
 	primary: '#C15E50',
 	muted: '#B4B4B4',
-	tool: '#BF4594',
+	tool: '#C15E50',
 	success: '#7DC599',
 	error: '#D45453',
 	secondary: '#AD6E30',

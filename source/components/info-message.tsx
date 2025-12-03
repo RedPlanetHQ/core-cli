@@ -15,22 +15,23 @@ export default function InfoMessage({
 }) {
 	const boxWidth = useTerminalWidth();
 	const {colors} = useTheme();
+
 	return (
 		<>
 			{hideBox ? (
 				<Box width={boxWidth} flexDirection="column" marginBottom={1}>
-					<Text color={colors.info}>{message}</Text>
+					<Text color={colors.white}>{message}</Text>
 				</Box>
 			) : hideTitle ? (
 				<Box
 					borderStyle="round"
 					width={boxWidth}
-					borderColor={colors.info}
+					borderColor={colors.white}
 					paddingX={2}
 					paddingY={0}
 					flexDirection="column"
 				>
-					<Text color={colors.info}>{message}</Text>
+					<Text color={colors.white}>{message}</Text>
 				</Box>
 			) : (
 				<TitledBox
@@ -39,12 +40,12 @@ export default function InfoMessage({
 					titles={['Info']}
 					titleStyles={titleStyles.pill}
 					width={boxWidth}
-					borderColor={colors.info}
+					borderColor={colors.white}
 					paddingX={2}
 					paddingY={1}
 					flexDirection="column"
 				>
-					<Text color={colors.info}>{message}</Text>
+					<Text color={colors.white}>{message}</Text>
 				</TitledBox>
 			)}
 		</>

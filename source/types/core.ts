@@ -18,6 +18,8 @@ export interface Message {
 	tool_calls?: ToolCall[];
 	tool_call_id?: string;
 	name?: string;
+	// Store original content before routine replacement (for episode saving)
+	_originalContent?: string;
 }
 
 export interface ToolCall {

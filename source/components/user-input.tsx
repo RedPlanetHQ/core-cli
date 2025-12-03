@@ -230,7 +230,6 @@ export default function UserInput({
 				setTaskRefreshKey(prev => prev + 1);
 
 				resetInput();
-				setIsTaskMode(false);
 				setTextInputKey(prev => prev + 1);
 			} catch (error) {
 				setTaskAddedMessage(
