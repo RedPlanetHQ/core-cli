@@ -1,8 +1,8 @@
 {
 	"name": "@redplanethq/core-cli",
 	"main": "dist/cli.js",
-	"version": "0.2.15",
-	"description": "",
+	"version": "0.2.16",
+	"description": "AI task manager",
 	"keywords": [
 		"cli",
 		"ai"

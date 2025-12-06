@@ -36,6 +36,7 @@ const launchCodingSessionCoreTool = tool({
 		taskDescription: string;
 		agentName?: string;
 		contextPrompt?: string;
+		workingDirectory: string;
 	}>({
 		type: 'object',
 		properties: {
@@ -56,8 +57,12 @@ const launchCodingSessionCoreTool = tool({
 				type: 'string',
 				description: 'Additional context or system prompt to pass to the agent',
 			},
+			workingDirectory: {
+				type: 'string',
+				description: 'Absolute path to the directory where the coding agent should work',
+			},
 		},
-		required: ['taskDescription'],
+		required: ['taskDescription', 'workingDirectory'],
 	}),
 });
 
@@ -66,6 +71,7 @@ const executeLaunchCodingSession = async (args: {
 	taskDescription: string;
 	agentName?: string;
 	contextPrompt?: string;
+	workingDirectory: string;
 }): Promise<string> => {
 	// Check tmux
 	if (!isTmuxInstalled()) {
@@ -100,12 +106,11 @@ const executeLaunchCodingSession = async (args: {
 	}
 
 	// Create session
-	const workingDirectory = process.cwd();
 	const session = createSession(
 		agentName,
 		args.taskNumber,
 		args.taskDescription,
-		workingDirectory,
+		args.workingDirectory,
 		args.contextPrompt ?? `Task: ${args.taskDescription}`,
 	);
 
@@ -146,6 +151,7 @@ const launchCodingSessionFormatter = async (
 		taskDescription: string;
 		agentName?: string;
 		contextPrompt?: string;
+		workingDirectory: string;
 	},
 	result?: string,
 ): Promise<string> => {
@@ -154,6 +160,7 @@ const launchCodingSessionFormatter = async (
 		lines.push(`└ Task: #${args.taskNumber}`);
 	}
 	lines.push(`  Description: ${args.taskDescription}`);
+	lines.push(`  Working Directory: ${args.workingDirectory}`);
 	if (args.agentName) {
 		lines.push(`  Agent: ${args.agentName}`);
 	}
