@@ -1,4 +1,5 @@
 import type {ThemePreset} from '@/types/ui';
+import type {CodingAgentsConfig} from '@/types/coding-agents';
 
 // AI provider configurations (OpenAI-compatible)
 export interface AIProviderConfig {
@@ -35,7 +36,7 @@ export interface ProviderConfig {
 	[key: string]: unknown; // Allow additional provider-specific config
 }
 
-export interface AppConfig {
+export interface AppConfig extends CodingAgentsConfig {
 	// Core authentication
 	auth?: {
 		url: string;

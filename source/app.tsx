@@ -31,8 +31,10 @@ import BashExecutionIndicator from './components/bash-execution-indicator';
 import {useToolHandler} from './hooks/useToolHandler';
 import ModelSelector from './components/model-selector';
 import ProviderSelector from './components/provider-selector';
+import CodingAgentSelector from './components/coding-agent-selector';
 import NameSelector from './components/name-selector';
 import {getAssistantName} from './config/preferences';
+import {appConfig} from './config/index';
 
 export default function App() {
 	// Use extracted hooks
@@ -76,7 +78,11 @@ export default function App() {
 			}, 0);
 			return () => clearTimeout(timer);
 		}
-	}, [appState.queuedChatComponents.length, appState.flushQueuedToStatic]);
+	}, [
+		appState.queuedChatComponents.length,
+		appState.flushQueuedToStatic,
+		appState,
+	]);
 
 	// Setup mode handlers
 	const modeHandlers = useModeHandlers({
@@ -93,6 +99,7 @@ export default function App() {
 		setIsProviderSelectionMode: appState.setIsProviderSelectionMode,
 		setIsThemeSelectionMode: appState.setIsThemeSelectionMode,
 		setIsNameSelectionMode: appState.setIsNameSelectionMode,
+		setIsCodingAgentSelectionMode: appState.setIsCodingAgentSelectionMode,
 		setIsRecommendationsMode: appState.setIsRecommendationsMode,
 		setIsConfigWizardMode: appState.setIsConfigWizardMode,
 		addToChatQueue: appState.addToChatQueue,
@@ -183,7 +190,8 @@ export default function App() {
 		appState.setIsIncognitoMode(!appState.isIncognitoMode);
 		appState.addToChatQueue(
 			<Text key={`incognito-${appState.componentKeyCounter}`} color="gray">
-				Incognito mode {!appState.isIncognitoMode ? 'enabled' : 'disabled'}. Episodes will {!appState.isIncognitoMode ? 'not ' : ''}be saved.
+				Incognito mode {!appState.isIncognitoMode ? 'enabled' : 'disabled'}.
+				Episodes will {!appState.isIncognitoMode ? 'not ' : ''}be saved.
 			</Text>,
 		);
 	}, [appState]);
@@ -196,6 +204,8 @@ export default function App() {
 				onEnterProviderSelectionMode: modeHandlers.enterProviderSelectionMode,
 				onEnterThemeSelectionMode: modeHandlers.enterThemeSelectionMode,
 				onEnterNameSelectionMode: modeHandlers.enterNameSelectionMode,
+				onEnterCodingAgentSelectionMode:
+					modeHandlers.enterCodingAgentSelectionMode,
 				onEnterRecommendationsMode: modeHandlers.enterRecommendationsMode,
 				onEnterConfigWizardMode: modeHandlers.enterConfigWizardMode,
 				onShowStatus: handleShowStatus,
@@ -223,6 +233,7 @@ export default function App() {
 			modeHandlers.enterRecommendationsMode,
 			modeHandlers.enterConfigWizardMode,
 			modeHandlers.enterNameSelectionMode,
+			modeHandlers.enterCodingAgentSelectionMode,
 			handleShowStatus,
 			handleToggleIncognitoMode,
 			chatHandler.handleChatMessage,
@@ -271,7 +282,10 @@ export default function App() {
 					<Box flexGrow={1} flexDirection="column" minHeight={0}>
 						{appState.startChat && (
 							<ChatQueue
-								staticComponents={[...staticComponents, ...appState.staticChatComponents]}
+								staticComponents={[
+									...staticComponents,
+									...appState.staticChatComponents,
+								]}
 								queuedComponents={appState.queuedChatComponents}
 							/>
 						)}
@@ -311,6 +325,12 @@ export default function App() {
 										void modeHandlers.handleProviderSelect(provider)
 									}
 									onCancel={modeHandlers.handleProviderSelectionCancel}
+								/>
+							) : appState.isCodingAgentSelectionMode ? (
+								<CodingAgentSelector
+									currentAgent={appConfig.defaultCodingAgent}
+									onAgentSelect={modeHandlers.handleCodingAgentSelect}
+									onCancel={modeHandlers.handleCodingAgentSelectionCancel}
 								/>
 							) : appState.isThemeSelectionMode ? (
 								<ThemeSelector

@@ -19,6 +19,7 @@ export async function handleMessageSubmission(
 		onEnterProviderSelectionMode,
 		onEnterThemeSelectionMode,
 		onEnterNameSelectionMode,
+		onEnterCodingAgentSelectionMode,
 		onEnterConfigWizardMode,
 		onShowStatus,
 		onToggleIncognitoMode,
@@ -115,7 +116,7 @@ ${result.fullOutput || '(No output)'}`;
 
 	// Handle regular commands (prefixed with /)
 	if (message.startsWith('/')) {
-		const commandName = message.slice(1).split(' ')[0];
+		const commandName = parsedInput.command || message.slice(1).split(' ')[0];
 
 		// Handle special commands that need app state access
 		if (commandName === 'clear') {
@@ -142,6 +143,9 @@ ${result.fullOutput || '(No output)'}`;
 		} else if (commandName === 'incognito') {
 			onToggleIncognitoMode();
 			return;
+		} else if (commandName === 'set-coding-agent') {
+			onEnterCodingAgentSelectionMode();
+			return;
 		}
 
 		// Execute built-in command
@@ -149,7 +153,9 @@ ${result.fullOutput || '(No output)'}`;
 			(sum, msg) => sum + options.getMessageTokens(msg),
 			0,
 		);
-		const result = await commandRegistry.execute(message.slice(1), messages, {
+		// Use parsedInput if available, otherwise fall back to manual parsing
+		const commandInput = parsedInput.fullCommand || message.slice(1);
+		const result = await commandRegistry.execute(commandInput, messages, {
 			provider: options.provider,
 			model: options.model,
 			tokens: totalTokens,

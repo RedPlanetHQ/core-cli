@@ -1,0 +1,304 @@
+/* eslint-disable @typescript-eslint/require-await */
+/**
+ * Coding session tools
+ * Tools for managing coding agent sessions
+ */
+
+import {tool, jsonSchema} from '@/types/core';
+import type {ToolDefinition} from '@/types/index';
+import {
+	createSession,
+	saveSession,
+	getActiveSessions,
+	getSessionsForTask,
+	deleteSession,
+	findSession,
+} from '@/utils/coding-sessions';
+import {
+	launchCodingAgent,
+	killTmuxSession,
+	isTmuxInstalled,
+	isAgentInstalled,
+} from '@/utils/tmux-manager';
+import {getAgentConfig} from '@/config/coding-agents';
+import {getConfig} from '@/config';
+import {readWeekTasks} from '@/utils/tasks';
+import type {TaskContext} from '@/types/sessions';
+
+// ==================== LAUNCH CODING SESSION ====================
+
+const launchCodingSessionCoreTool = tool({
+	description:
+		'Launch a coding agent (Claude Code, Cursor, Aider, etc.) in a detached tmux session for implementation work',
+	inputSchema: jsonSchema<{
+		taskNumber?: number;
+		taskDescription: string;
+		agentName?: string;
+		contextPrompt?: string;
+	}>({
+		type: 'object',
+		properties: {
+			taskNumber: {
+				type: 'number',
+				description: 'Optional task number to associate with this session',
+			},
+			taskDescription: {
+				type: 'string',
+				description: 'Description of what needs to be implemented or worked on',
+			},
+			agentName: {
+				type: 'string',
+				description:
+					'Name of coding agent to use (claude-code, cursor, aider, codex). If not specified, uses default from config.',
+			},
+			contextPrompt: {
+				type: 'string',
+				description: 'Additional context or system prompt to pass to the agent',
+			},
+		},
+		required: ['taskDescription'],
+	}),
+});
+
+const executeLaunchCodingSession = async (args: {
+	taskNumber?: number;
+	taskDescription: string;
+	agentName?: string;
+	contextPrompt?: string;
+}): Promise<string> => {
+	// Check tmux
+	if (!isTmuxInstalled()) {
+		return 'ERROR: tmux is not installed. Please install tmux first.';
+	}
+
+	// Get config
+	const config = await getConfig();
+	const agentName =
+		args.agentName ?? config.defaultCodingAgent ?? 'claude-code';
+
+	// Get agent config
+	const agentConfig = getAgentConfig(agentName);
+	if (!agentConfig) {
+		return `ERROR: Unknown agent: ${agentName}`;
+	}
+
+	// Check if agent is installed
+	const customPath = config.codingAgents?.[agentName]?.path;
+	if (!isAgentInstalled(agentConfig, customPath)) {
+		const cmd = customPath ?? agentConfig.command;
+		return `ERROR: ${agentConfig.displayName} is not installed (${cmd} not found)`;
+	}
+
+	// Validate task number if provided
+	if (args.taskNumber) {
+		const tasks = await readWeekTasks();
+		const task = tasks.find(t => t.number === args.taskNumber);
+		if (!task) {
+			return `ERROR: Task #${args.taskNumber} not found`;
+		}
+	}
+
+	// Create session
+	const workingDirectory = process.cwd();
+	const session = createSession(
+		agentName,
+		args.taskNumber,
+		args.taskDescription,
+		workingDirectory,
+		args.contextPrompt ?? `Task: ${args.taskDescription}`,
+	);
+
+	// Build context
+	const context: TaskContext = {
+		taskDescription: args.taskDescription,
+		taskNumber: args.taskNumber,
+		prompt: args.contextPrompt,
+	};
+
+	try {
+		// Launch the agent
+		await launchCodingAgent(session, context, customPath);
+
+		// Update session status
+		session.status = 'detached';
+		saveSession(session);
+
+		const attachCmd = args.taskNumber
+			? `core-cli attach task-${args.taskNumber}`
+			: `core-cli attach ${session.tmuxSessionName}`;
+
+		return `SUCCESS: Launched ${agentConfig.displayName} in background session "${session.tmuxSessionName}"\n\nTo attach to this session, run: ${attachCmd}\n\nPress Ctrl+B then D to detach from the session when you're done.`;
+	} catch (error) {
+		deleteSession(session.id);
+		return `ERROR: Failed to launch agent: ${
+			error instanceof Error ? error.message : 'Unknown error'
+		}`;
+	}
+};
+
+const launchCodingSessionFormatter = async (
+	args: {
+		taskNumber?: number;
+		taskDescription: string;
+		agentName?: string;
+		contextPrompt?: string;
+	},
+	result?: string,
+): Promise<string> => {
+	const lines: string[] = ['⚡ launch_coding_session'];
+	if (args.taskNumber) {
+		lines.push(`└ Task: #${args.taskNumber}`);
+	}
+	lines.push(`  Description: ${args.taskDescription}`);
+	if (args.agentName) {
+		lines.push(`  Agent: ${args.agentName}`);
+	}
+
+	if (result) {
+		lines.push('');
+		lines.push(result);
+	}
+
+	return lines.join('\n');
+};
+
+export const launchCodingSessionTool: ToolDefinition = {
+	name: 'launch_coding_session',
+	tool: launchCodingSessionCoreTool,
+	handler: executeLaunchCodingSession,
+	formatter: launchCodingSessionFormatter,
+};
+
+// ==================== LIST CODING SESSIONS ====================
+
+const listCodingSessionsCoreTool = tool({
+	description: 'List all active coding agent sessions',
+	inputSchema: jsonSchema<{
+		taskNumber?: number;
+	}>({
+		type: 'object',
+		properties: {
+			taskNumber: {
+				type: 'number',
+				description:
+					'Optional task number to filter sessions for a specific task',
+			},
+		},
+	}),
+});
+
+const executeListCodingSessions = async (args: {
+	taskNumber?: number;
+}): Promise<string> => {
+	// Always validate tmux sessions when listing
+	const sessions = args.taskNumber
+		? getSessionsForTask(args.taskNumber)
+		: getActiveSessions(true);
+
+	if (sessions.length === 0) {
+		return 'No active coding sessions found.';
+	}
+
+	const lines: string[] = [];
+	for (const session of sessions) {
+		const taskInfo = session.taskNumber ? `Task #${session.taskNumber}: ` : '';
+		const attachCmd = session.taskNumber
+			? `core-cli attach task-${session.taskNumber}`
+			: `core-cli attach ${session.tmuxSessionName}`;
+
+		lines.push(`[${session.agentName}] ${taskInfo}${session.taskDescription}`);
+		lines.push(`  Session: ${session.tmuxSessionName}`);
+		lines.push(`  Status: ${session.status}`);
+		lines.push(`  Started: ${session.startedAt}`);
+		lines.push(`  Attach: ${attachCmd}`);
+		lines.push('');
+	}
+
+	return lines.join('\n');
+};
+
+const listCodingSessionsFormatter = async (
+	_args: {taskNumber?: number},
+	result?: string,
+): Promise<string> => {
+	const lines: string[] = ['💻 list_coding_sessions'];
+	if (result) {
+		lines.push('');
+		lines.push(result);
+	}
+	return lines.join('\n');
+};
+
+export const listCodingSessionsTool: ToolDefinition = {
+	name: 'list_coding_sessions',
+	tool: listCodingSessionsCoreTool,
+	handler: executeListCodingSessions,
+	formatter: listCodingSessionsFormatter,
+};
+
+// ==================== CLOSE CODING SESSION ====================
+
+const closeCodingSessionCoreTool = tool({
+	description:
+		'Close a coding session by task number or session name, killing the tmux session',
+	inputSchema: jsonSchema<{
+		identifier: string;
+	}>({
+		type: 'object',
+		properties: {
+			identifier: {
+				type: 'string',
+				description:
+					'Task number (e.g., "42" or "task-42") or tmux session name',
+			},
+		},
+		required: ['identifier'],
+	}),
+});
+
+const executeCloseCodingSession = async (args: {
+	identifier: string;
+}): Promise<string> => {
+	const session = findSession(args.identifier);
+
+	if (!session) {
+		return `ERROR: Session not found: ${args.identifier}`;
+	}
+
+	try {
+		// Kill the tmux session
+		killTmuxSession(session.tmuxSessionName);
+
+		// Update session status
+		session.status = 'completed';
+		saveSession(session);
+
+		return `SUCCESS: Closed session "${session.tmuxSessionName}"`;
+	} catch (error) {
+		return `ERROR: Failed to close session: ${
+			error instanceof Error ? error.message : 'Unknown error'
+		}`;
+	}
+};
+
+const closeCodingSessionFormatter = async (
+	args: {identifier: string},
+	result?: string,
+): Promise<string> => {
+	const lines: string[] = ['🛑 close_coding_session'];
+	lines.push(`└ Identifier: ${args.identifier}`);
+
+	if (result) {
+		lines.push('');
+		lines.push(result);
+	}
+
+	return lines.join('\n');
+};
+
+export const closeCodingSessionTool: ToolDefinition = {
+	name: 'close_coding_session',
+	tool: closeCodingSessionCoreTool,
+	handler: executeCloseCodingSession,
+	formatter: closeCodingSessionFormatter,
+};

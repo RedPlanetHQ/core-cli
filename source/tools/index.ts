@@ -8,6 +8,11 @@ import {
 	searchTasksTool,
 } from './definitions/tasks';
 import {executeBashTool} from './execute-bash';
+import {
+	launchCodingSessionTool,
+	listCodingSessionsTool,
+	closeCodingSessionTool,
+} from './definitions/coding-session';
 
 export const toolDefinitions: ToolDefinition[] = [
 	newTaskTool,
@@ -16,6 +21,9 @@ export const toolDefinitions: ToolDefinition[] = [
 	listTasksTool,
 	searchTasksTool,
 	executeBashTool,
+	launchCodingSessionTool,
+	listCodingSessionsTool,
+	closeCodingSessionTool,
 ];
 
 // Export handlers for manual execution (human-in-the-loop)

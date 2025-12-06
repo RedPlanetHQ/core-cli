@@ -101,6 +101,8 @@ function loadAppConfig(): AppConfig {
 				providers: processedData.core.providers ?? [],
 				mcpServers: processedData.core.mcpServers ?? [],
 				lastTaskSync: processedData.core.lastTaskSync,
+				defaultCodingAgent: processedData.core.defaultCodingAgent,
+				codingAgents: processedData.core.codingAgents,
 			};
 		}
 	} catch {
@@ -111,6 +113,36 @@ function loadAppConfig(): AppConfig {
 }
 
 export let appConfig = loadAppConfig();
+
+// Function to get current app configuration
+export function getConfig(): AppConfig {
+	return appConfig;
+}
+
+// Function to update app configuration
+export function updateConfig(newConfig: Partial<AppConfig>): void {
+	const configJsonPath = getClosestConfigFile('config.json');
+
+	try {
+		// Read current config
+		const rawData = readFileSync(configJsonPath, 'utf-8');
+		const configData = JSON.parse(rawData) as {core?: AppConfig};
+
+		// Update config
+		if (!configData.core) {
+			configData.core = {};
+		}
+		Object.assign(configData.core, newConfig);
+
+		// Write back to file
+		writeFileSync(configJsonPath, JSON.stringify(configData, null, 2), 'utf-8');
+
+		// Reload config to update in-memory cache
+		reloadAppConfig();
+	} catch (error) {
+		console.warn('Failed to update config:', error);
+	}
+}
 
 // Function to reload the app configuration (useful after config file changes)
 export function reloadAppConfig(): void {

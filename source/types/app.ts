@@ -8,6 +8,7 @@ export interface MessageSubmissionOptions {
 	onEnterProviderSelectionMode: () => void;
 	onEnterThemeSelectionMode: () => void;
 	onEnterNameSelectionMode: () => void;
+	onEnterCodingAgentSelectionMode: () => void;
 	onEnterRecommendationsMode: () => void;
 	onEnterConfigWizardMode: () => void;
 	onShowStatus: () => void;

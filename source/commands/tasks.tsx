@@ -11,6 +11,7 @@ import {readWeekTasks, getWeekIdentifier, getCurrentWeekFilePath} from '@/utils/
 import {TaskState} from '@/types/tasks';
 import {readFile} from 'node:fs/promises';
 import {existsSync} from 'node:fs';
+import {getActiveSessions} from '@/utils/coding-sessions';
 
 export const tasksCommand: Command = {
 	name: 'tasks',
@@ -44,6 +45,16 @@ export const tasksCommand: Command = {
 			markdownContent = await readFile(filePath, 'utf-8');
 		} else {
 			markdownContent = '## Todo\n\n## In Progress\n\n## Completed\n';
+		}
+
+		// Get active coding sessions with validation
+		const activeSessions = getActiveSessions(true);
+		const hasActiveSessions = activeSessions.length > 0;
+
+		// Append session info to markdown if there are active sessions
+		if (hasActiveSessions) {
+			markdownContent += `\n\n---\n\n💻 Active Coding Sessions: ${activeSessions.length}\n`;
+			markdownContent += 'Run /sessions for details\n';
 		}
 
 		return React.createElement(TasksDisplay, {

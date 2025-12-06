@@ -5,7 +5,7 @@ import {
 	savePreferences,
 	loadPreferences,
 } from '@/config/preferences';
-import {reloadAppConfig} from '@/config/index';
+import {reloadAppConfig, getConfig, updateConfig} from '@/config/index';
 import {getToolManager} from '@/message-handler';
 import SuccessMessage from '@/components/success-message';
 import ErrorMessage from '@/components/error-message';
@@ -26,6 +26,7 @@ interface UseModeHandlersProps {
 	setIsProviderSelectionMode: (mode: boolean) => void;
 	setIsThemeSelectionMode: (mode: boolean) => void;
 	setIsNameSelectionMode: (mode: boolean) => void;
+	setIsCodingAgentSelectionMode: (mode: boolean) => void;
 	setIsRecommendationsMode: (mode: boolean) => void;
 	setIsConfigWizardMode: (mode: boolean) => void;
 	addToChatQueue: (component: React.ReactNode) => void;
@@ -49,6 +50,7 @@ export function useModeHandlers({
 	setIsProviderSelectionMode,
 	setIsThemeSelectionMode,
 	setIsNameSelectionMode,
+	setIsCodingAgentSelectionMode,
 	setIsRecommendationsMode,
 	setIsConfigWizardMode,
 	addToChatQueue,
@@ -63,6 +65,11 @@ export function useModeHandlers({
 	// Helper function to enter provider selection mode
 	const enterProviderSelectionMode = () => {
 		setIsProviderSelectionMode(true);
+	};
+
+	// Helper function to enter coding agent selection mode
+	const enterCodingAgentSelectionMode = () => {
+		setIsCodingAgentSelectionMode(true);
 	};
 
 	// Handle model selection
@@ -158,6 +165,28 @@ export function useModeHandlers({
 	// Handle provider selection cancel
 	const handleProviderSelectionCancel = () => {
 		setIsProviderSelectionMode(false);
+	};
+
+	// Handle coding agent selection
+	const handleCodingAgentSelect = (selectedAgent: string) => {
+		const config = getConfig();
+		config.defaultCodingAgent = selectedAgent;
+		updateConfig(config);
+
+		setIsCodingAgentSelectionMode(false);
+
+		// Add success message to chat queue
+		addToChatQueue(
+			<SuccessMessage
+				key={`coding-agent-changed-${componentKeyCounter}`}
+				message={`Default coding agent set to: ${selectedAgent}`}
+				hideBox={true}
+			/>,
+		);
+	};
+
+	const handleCodingAgentSelectionCancel = () => {
+		setIsCodingAgentSelectionMode(false);
 	};
 
 	// Helper function to enter theme selection mode
@@ -312,6 +341,7 @@ export function useModeHandlers({
 	return {
 		enterModelSelectionMode,
 		enterProviderSelectionMode,
+		enterCodingAgentSelectionMode,
 		enterThemeSelectionMode,
 		enterNameSelectionMode,
 		enterRecommendationsMode,
@@ -320,6 +350,8 @@ export function useModeHandlers({
 		handleModelSelectionCancel,
 		handleProviderSelect,
 		handleProviderSelectionCancel,
+		handleCodingAgentSelect,
+		handleCodingAgentSelectionCancel,
 		handleThemeSelect,
 		handleThemeSelectionCancel,
 		handleNameSelect,
