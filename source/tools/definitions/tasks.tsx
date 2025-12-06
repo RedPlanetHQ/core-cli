@@ -5,7 +5,6 @@ import {
 	readWeekTasks,
 	writeWeekTasks,
 	getNextTaskNumber,
-	renumberTasks,
 	getAllWeekFiles,
 	readTasksFromWeekFile,
 	getCurrentWeekFile,
@@ -358,14 +357,12 @@ const executeDeleteTask = async (args: {
 	const deletedTask = tasks[taskIndex];
 	tasks.splice(taskIndex, 1);
 
-	// Renumber remaining tasks
-	const renumberedTasks = renumberTasks(tasks);
-	await writeWeekTasks(renumberedTasks);
+	await writeWeekTasks(tasks);
 
 	// Sync to memory
 	await syncTasksToMemory();
 
-	return `Task #${args.taskNumber} "${deletedTask.description}" deleted successfully. Remaining tasks have been renumbered.`;
+	return `Task #${args.taskNumber} "${deletedTask.description}" deleted successfully.`;
 };
 
 const deleteTaskFormatter = async (

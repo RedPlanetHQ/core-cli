@@ -1,7 +1,7 @@
 {
 	"name": "@redplanethq/core-cli",
 	"main": "dist/cli.js",
-	"version": "0.2.13",
+	"version": "0.2.14",
 	"description": "",
 	"keywords": [
 		"cli",
@@ -49,6 +49,7 @@
 	"dependencies": {
 		"@ai-sdk/openai-compatible": "^1.0.24",
 		"@anthropic-ai/tokenizer": "^0.0.4",
+		"@inkjs/ui": "2.0.0",
 		"@mishieck/ink-titled-box": "^0.3.0",
 		"@modelcontextprotocol/sdk": "^1.17.3",
 		"ai": "^5.0.82",
@@ -58,7 +59,6 @@
 		"dotenv": "^17.2.3",
 		"ignore": "^7.0.5",
 		"ink": "^6.5.1",
-		"@inkjs/ui": "2.0.0",
 		"ink-big-text": "^2.0.0",
 		"ink-gradient": "^3.0.0",
 		"ink-select-input": "^6.2.0",

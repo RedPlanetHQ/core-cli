@@ -655,6 +655,7 @@ export default function UserInput({
 							onSubmit={handleSubmit}
 							placeholder={currentPlaceholder}
 							focus={isFocused}
+							showCursor
 						/>
 					)}
 				</Box>
