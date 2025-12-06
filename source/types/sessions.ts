@@ -6,7 +6,7 @@ export type SessionStatus = 'active' | 'detached' | 'completed' | 'error';
 
 export interface CodingSession {
 	id: string; // UUID
-	tmuxSessionName: string; // e.g., "core-coding-task-42-a1b2"
+	tmuxSessionName: string; // e.g., "task-42-abcde"
 	agentName: string; // "claude-code", "cursor", etc.
 	taskNumber?: number; // Linked task number
 	taskDescription: string; // What's being worked on
@@ -15,6 +15,8 @@ export interface CodingSession {
 	lastActivity?: string; // ISO timestamp
 	agentSessionId?: string; // Agent's internal session ID (if supported)
 	workingDirectory: string;
+	worktreePath?: string; // Git worktree path (if created)
+	branchName?: string; // Git branch name for the worktree
 	contextProvided: string; // Summary of context passed to agent
 }
 

@@ -79,6 +79,12 @@ export function useAppState() {
 	// Incognito mode state
 	const [isIncognitoMode, setIsIncognitoMode] = useState<boolean>(false);
 
+	// Status bar refresh trigger
+	const [statusBarRefreshTrigger, setStatusBarRefreshTrigger] = useState<number>(0);
+	const triggerStatusBarRefresh = useCallback(() => {
+		setStatusBarRefreshTrigger(prev => prev + 1);
+	}, []);
+
 	// Tool confirmation state
 	const [pendingToolCalls, setPendingToolCalls] = useState<ToolCall[]>([]);
 	const [currentToolIndex, setCurrentToolIndex] = useState<number>(0);
@@ -223,6 +229,7 @@ export function useAppState() {
 		currentBashCommand,
 		developmentMode,
 		isIncognitoMode,
+		statusBarRefreshTrigger,
 		pendingToolCalls,
 		currentToolIndex,
 		completedToolResults,
@@ -278,5 +285,6 @@ export function useAppState() {
 		updateMessages,
 		resetToolConfirmationState,
 		clearChat,
+		triggerStatusBarRefresh,
 	};
 }

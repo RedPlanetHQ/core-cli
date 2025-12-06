@@ -13,6 +13,7 @@ import {
 import type {Task, Priority} from '@/types/tasks';
 import {TaskState} from '@/types/tasks';
 import {updateLastTaskSync} from '@/config/index';
+import {triggerStatusBarRefresh} from '@/utils/status-bar-events';
 
 // Helper function to sync tasks to Core API after modifications
 async function syncTasksToMemory(): Promise<void> {
@@ -23,6 +24,9 @@ async function syncTasksToMemory(): Promise<void> {
 		// Update last sync timestamp
 		const now = new Date().toISOString();
 		updateLastTaskSync(now);
+
+		// Trigger status bar refresh
+		triggerStatusBarRefresh();
 	} catch (error) {
 		// Silent failure - don't block tool execution if sync fails
 		console.warn('Failed to sync tasks to Core:', error);

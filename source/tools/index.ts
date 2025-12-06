@@ -12,6 +12,8 @@ import {
 	launchCodingSessionTool,
 	listCodingSessionsTool,
 	closeCodingSessionTool,
+	deleteCodingSessionTool,
+	clearCodingSessionsTool,
 } from './definitions/coding-session';
 
 export const toolDefinitions: ToolDefinition[] = [
@@ -24,6 +26,8 @@ export const toolDefinitions: ToolDefinition[] = [
 	launchCodingSessionTool,
 	listCodingSessionsTool,
 	closeCodingSessionTool,
+	deleteCodingSessionTool,
+	clearCodingSessionsTool,
 ];
 
 // Export handlers for manual execution (human-in-the-loop)

@@ -14,6 +14,7 @@ import {
 	deleteSession,
 	findSession,
 } from '@/utils/coding-sessions';
+import {triggerStatusBarRefresh} from '@/utils/status-bar-events';
 import {
 	launchCodingAgent,
 	killTmuxSession,
@@ -122,6 +123,9 @@ const executeLaunchCodingSession = async (args: {
 		// Update session status
 		session.status = 'detached';
 		saveSession(session);
+
+		// Trigger status bar refresh
+		triggerStatusBarRefresh();
 
 		const attachCmd = args.taskNumber
 			? `core-cli attach task-${args.taskNumber}`
@@ -273,6 +277,9 @@ const executeCloseCodingSession = async (args: {
 		session.status = 'completed';
 		saveSession(session);
 
+		// Trigger status bar refresh
+		triggerStatusBarRefresh();
+
 		return `SUCCESS: Closed session "${session.tmuxSessionName}"`;
 	} catch (error) {
 		return `ERROR: Failed to close session: ${
@@ -301,4 +308,157 @@ export const closeCodingSessionTool: ToolDefinition = {
 	tool: closeCodingSessionCoreTool,
 	handler: executeCloseCodingSession,
 	formatter: closeCodingSessionFormatter,
+};
+
+// ==================== DELETE CODING SESSION ====================
+
+const deleteCodingSessionCoreTool = tool({
+	description:
+		'Delete a coding session permanently, including tmux session and worktree cleanup',
+	inputSchema: jsonSchema<{
+		identifier: string;
+	}>({
+		type: 'object',
+		properties: {
+			identifier: {
+				type: 'string',
+				description: 'Session name (e.g., "task-42-abcde") to delete',
+			},
+		},
+		required: ['identifier'],
+	}),
+});
+
+const executeDeleteCodingSession = async (args: {
+	identifier: string;
+}): Promise<string> => {
+	const session = findSession(args.identifier);
+
+	if (!session) {
+		return `ERROR: Session not found: ${args.identifier}`;
+	}
+
+	try {
+		// Kill the tmux session if running
+		if (require('@/utils/tmux-manager').tmuxSessionExists(session.tmuxSessionName)) {
+			killTmuxSession(session.tmuxSessionName);
+		}
+
+		const worktreePath = session.worktreePath;
+
+		// Delete the session (also cleans up worktree)
+		deleteSession(session.id);
+
+		// Trigger status bar refresh
+		triggerStatusBarRefresh();
+
+		let message = `SUCCESS: Deleted session "${session.tmuxSessionName}"`;
+		if (worktreePath) {
+			message += `\nCleaned up worktree: ${worktreePath}`;
+		}
+
+		return message;
+	} catch (error) {
+		return `ERROR: Failed to delete session: ${
+			error instanceof Error ? error.message : 'Unknown error'
+		}`;
+	}
+};
+
+const deleteCodingSessionFormatter = async (
+	args: {identifier: string},
+	result?: string,
+): Promise<string> => {
+	const lines: string[] = ['🗑️  delete_coding_session'];
+	lines.push(`└ Identifier: ${args.identifier}`);
+
+	if (result) {
+		lines.push('');
+		lines.push(result);
+	}
+
+	return lines.join('\n');
+};
+
+export const deleteCodingSessionTool: ToolDefinition = {
+	name: 'delete_coding_session',
+	tool: deleteCodingSessionCoreTool,
+	handler: executeDeleteCodingSession,
+	formatter: deleteCodingSessionFormatter,
+};
+
+// ==================== CLEAR ALL CODING SESSIONS ====================
+
+const clearCodingSessionsCoreTool = tool({
+	description:
+		'Clear all coding sessions, killing all tmux sessions and cleaning up all worktrees',
+	inputSchema: jsonSchema<Record<string, never>>({
+		type: 'object',
+		properties: {},
+	}),
+});
+
+const executeClearCodingSessions = async (): Promise<string> => {
+	const {loadAllSessions} = require('@/utils/coding-sessions');
+	const sessions = loadAllSessions();
+
+	if (sessions.length === 0) {
+		return 'No sessions to clear.';
+	}
+
+	try {
+		let deletedCount = 0;
+		let worktreeCount = 0;
+
+		for (const session of sessions) {
+			// Kill tmux session if running
+			if (require('@/utils/tmux-manager').tmuxSessionExists(session.tmuxSessionName)) {
+				killTmuxSession(session.tmuxSessionName);
+			}
+
+			// Track worktrees
+			if (session.worktreePath) {
+				worktreeCount++;
+			}
+
+			// Delete the session
+			deleteSession(session.id);
+			deletedCount++;
+		}
+
+		// Trigger status bar refresh
+		triggerStatusBarRefresh();
+
+		let message = `SUCCESS: Cleared ${deletedCount} session${deletedCount !== 1 ? 's' : ''}`;
+		if (worktreeCount > 0) {
+			message += `\nCleaned up ${worktreeCount} worktree${worktreeCount !== 1 ? 's' : ''}`;
+		}
+
+		return message;
+	} catch (error) {
+		return `ERROR: Failed to clear sessions: ${
+			error instanceof Error ? error.message : 'Unknown error'
+		}`;
+	}
+};
+
+const clearCodingSessionsFormatter = async (
+	_args: Record<string, never>,
+	result?: string,
+): Promise<string> => {
+	const lines: string[] = ['🧹 clear_coding_sessions'];
+
+	if (result) {
+		lines.push('');
+		lines.push(result);
+	}
+
+	return lines.join('\n');
+};
+
+export const clearCodingSessionsTool: ToolDefinition = {
+	name: 'clear_coding_sessions',
+	tool: clearCodingSessionsCoreTool,
+	handler: executeClearCodingSessions,
+	formatter: clearCodingSessionsFormatter,
 };

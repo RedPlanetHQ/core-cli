@@ -1,10 +1,11 @@
 import {Box, Text} from 'ink';
 import WelcomeMessage from '@/components/welcome-message';
-import React from 'react';
+import React, {useEffect} from 'react';
 import {getThemeColors} from '@/config/themes';
 import {ThemeContext} from '@/hooks/useTheme';
 import {setGlobalMessageQueue} from '@/utils/message-queue';
 import {useAppInitialization} from '@/hooks/useAppInitialization';
+import {registerStatusBarRefresh} from '@/utils/status-bar-events';
 
 // Import extracted hooks and utilities
 import {useAppState} from '@/hooks/useAppState';
@@ -68,6 +69,11 @@ export default function App() {
 	React.useEffect(() => {
 		setGlobalMessageQueue(appState.addToChatQueue);
 	}, [appState.addToChatQueue]);
+
+	// Register status bar refresh callback
+	useEffect(() => {
+		registerStatusBarRefresh(appState.triggerStatusBarRefresh);
+	}, [appState.triggerStatusBarRefresh]);
 
 	// Flush queued components to static after they render
 	React.useEffect(() => {
@@ -385,6 +391,8 @@ export default function App() {
 									developmentMode={appState.developmentMode}
 									mcpStatus={appState.mcpStatus}
 									isIncognitoMode={appState.isIncognitoMode}
+									statusBarRefreshTrigger={appState.statusBarRefreshTrigger}
+									onStatusBarRefresh={appState.triggerStatusBarRefresh}
 								/>
 							) : appState.mcpInitialized && !appState.client ? (
 								<></>

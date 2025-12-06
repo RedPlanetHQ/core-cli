@@ -187,10 +187,13 @@ Monitor your token consumption across conversations and sessions.
 
 ## Commands
 
+### Chat Commands
+
 | Command     | Description                                           |
 | ----------- | ----------------------------------------------------- |
 | `/help`     | Display help information and available commands       |
 | `/tasks`    | View your current tasks                               |
+| `/sessions` | View all active coding agent sessions                 |
 | `--`        | Enter quick task mode for rapid task creation         |
 | `sync`      | Run smart routine to sync integrations and prioritize |
 | `/clear`    | Clear conversation history (memory persists)          |
@@ -199,6 +202,278 @@ Monitor your token consumption across conversations and sessions.
 | `/mcp`      | Manage MCP (Model Context Protocol) servers           |
 | `/usage`    | View token usage statistics                           |
 | `/set-name` | Customize your assistant's name                       |
+
+### CLI Commands
+
+#### Task Management
+
+```bash
+# List all tasks
+core-cli tasks list
+
+# Add a new task
+core-cli tasks add "Implement user authentication API"
+
+# Update an existing task
+core-cli tasks update 42 "Updated task description"
+
+# Delete a task
+core-cli tasks delete 42
+
+# View help
+core-cli tasks help
+```
+
+#### Session Management
+
+```bash
+# List all active coding agent sessions
+core-cli sessions list
+
+# Attach to a session
+core-cli sessions attach task-42-abcde
+core-cli sessions attach 42  # If only one session for task 42
+
+# Delete a specific session
+core-cli sessions delete task-42-abcde
+
+# Clear all sessions
+core-cli sessions clear
+
+# View help
+core-cli sessions help
+```
+
+## Coding Agents & Task Delegation
+
+Core CLI can delegate implementation work to AI coding agents like Claude Code, Cursor, Aider, and others. These agents run in isolated tmux sessions with their own git worktrees, allowing you to work on multiple tasks in parallel without conflicts.
+
+### Supported Coding Agents
+
+Core CLI supports the following coding agents out of the box:
+
+| Agent         | Description                                    | Installation                          |
+| ------------- | ---------------------------------------------- | ------------------------------------- |
+| **Claude Code** | Anthropic's official CLI for Claude          | `npm install -g @anthropic/claude-code` |
+| **Cursor AI**   | AI-first code editor                         | Download from [cursor.sh](https://cursor.sh) |
+| **Aider**       | AI pair programming in your terminal         | `pip install aider-chat`              |
+| **Codex CLI**   | OpenAI Codex command-line interface          | Custom installation                   |
+
+### Setting Default Coding Agent
+
+You can set your preferred coding agent in the CLI:
+
+```bash
+# Inside core-cli chat
+/set-coding-agent
+
+# Or ask naturally
+"Set my default coding agent to Claude Code"
+```
+
+### Task Delegation Workflow
+
+#### 1. Using Natural Language (Recommended)
+
+The AI assistant can automatically launch coding agents for you:
+
+```bash
+# Inside core-cli chat
+"Implement task 42"
+"Start working on task 15 using Cursor"
+"Delegate the API implementation to Aider"
+```
+
+The assistant will:
+- Validate the task exists
+- Launch the specified coding agent in a tmux session
+- Create an isolated git worktree for the task
+- Pass task context to the agent
+- Show you how to attach to the session
+
+#### 2. Using the @implement Routine
+
+Core CLI has a built-in routine for task delegation:
+
+```bash
+# Inside core-cli chat
+@implement 42           # Implement task #42 with default agent
+@implement 15 cursor    # Implement task #15 with Cursor
+```
+
+#### 3. Programmatic Access (Advanced)
+
+The AI assistant has access to coding session tools and can:
+- Launch sessions with custom context
+- List active sessions
+- Close or delete sessions
+- Monitor session status
+
+### How Git Worktrees Work
+
+When you delegate a task, Core CLI automatically:
+
+1. **Creates a new git branch** named `task-{number}-{random}` (e.g., `task-42-abcde`)
+2. **Creates a git worktree** in `../worktrees/task-42-abcde/`
+3. **Launches the coding agent** in that worktree directory
+4. **Runs in isolated tmux session** so it doesn't interfere with your main work
+
+**Benefits:**
+- Work on multiple tasks in parallel without git conflicts
+- Each task has its own clean workspace
+- Easy to switch between tasks
+- Automatic cleanup when session is deleted
+
+### Managing Active Sessions
+
+#### List Sessions
+
+```bash
+# Inside core-cli chat
+/sessions
+
+# Or via CLI
+core-cli sessions list
+```
+
+Output shows:
+- Agent name (e.g., [Claude Code])
+- Session name (e.g., task-42-abcde)
+- Task description preview
+- Session status and start time
+- Git worktree location
+- Attach command
+
+#### Attach to a Session
+
+```bash
+# Via CLI
+core-cli sessions attach task-42-abcde
+core-cli sessions attach 42  # If only one session for this task
+
+# Inside tmux session
+# Press Ctrl+B then D to detach
+```
+
+#### Delete a Session
+
+Deleting a session will:
+- Kill the tmux session
+- Remove the git worktree
+- Delete the git branch
+- Clean up all session metadata
+
+```bash
+# Via CLI
+core-cli sessions delete task-42-abcde
+
+# Via chat (AI will use the tool)
+"Delete the session for task 42"
+```
+
+#### Clear All Sessions
+
+```bash
+# Via CLI
+core-cli sessions clear
+
+# Via chat
+"Clear all coding sessions"
+```
+
+### Example Workflow
+
+Here's a complete example of delegating tasks:
+
+```bash
+# 1. Start core-cli
+core-cli
+
+# 2. View your tasks
+/tasks
+
+# 3. Delegate a task to Claude Code
+"Implement task 5"
+
+# Output:
+# ⚡ launch_coding_session
+# └ Task: #5
+#   Description: Add user authentication API
+#   Agent: claude-code
+#
+# SUCCESS: Launched Claude Code in background session "task-5-xfgpq"
+#
+# To attach to this session, run: core-cli sessions attach task-5-xfgpq
+
+# 4. Check active sessions
+/sessions
+
+# Output shows:
+# 💻 Active Coding Sessions
+#
+# 1. [claude-code] task-5-xfgpq
+#    Task: #5 - Add user authentication API
+#    Status: detached | Started: 2m ago
+#    Worktree: /Users/you/worktrees/task-5-xfgpq
+#    Branch: task-5-xfgpq
+#    Attach: core-cli sessions attach task-5-xfgpq
+
+# 5. Attach to the session
+core-cli sessions attach task-5-xfgpq
+
+# 6. Work with Claude Code in the tmux session
+# When done, press Ctrl+B then D to detach
+
+# 7. Later, delete the session
+core-cli sessions delete task-5-xfgpq
+```
+
+### Advanced Configuration
+
+#### Custom Agent Paths
+
+If your coding agent is installed in a non-standard location, configure it in Core:
+
+```json
+// In your Core CLI config
+{
+  "codingAgents": {
+    "claude-code": {
+      "path": "/custom/path/to/claude"
+    }
+  }
+}
+```
+
+#### Requirements
+
+- **tmux** must be installed (`brew install tmux` on macOS)
+- **git** must be installed and the directory must be a git repository
+- The selected coding agent must be installed and available in PATH
+
+### Troubleshooting
+
+**"tmux is not installed"**
+```bash
+# macOS
+brew install tmux
+
+# Ubuntu/Debian
+apt-get install tmux
+```
+
+**"Agent not found"**
+- Ensure the coding agent is installed
+- Check that it's in your PATH: `which claude` or `which cursor`
+- Configure custom path if needed
+
+**"Not a git repository"**
+- Initialize git: `git init`
+- Or run Core CLI from within a git repository
+
+**"Multiple sessions found for task"**
+- Use the full session name: `core-cli sessions attach task-42-abcde`
+- Or delete old sessions first: `core-cli sessions delete task-42-xxxxx`
 
 ## Development
 

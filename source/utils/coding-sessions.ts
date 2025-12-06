@@ -12,9 +12,11 @@ import {
 } from 'fs';
 import {join} from 'path';
 import {randomUUID} from 'crypto';
+import {execSync} from 'child_process';
 import {getAppDataPath} from '@/config/paths';
 import type {CodingSession, SessionStatus} from '@/types/sessions';
 import {readdirSync} from 'fs';
+import {tmuxSessionExists} from './tmux-manager';
 
 const SESSIONS_DIR = join(getAppDataPath(), 'sessions');
 
@@ -35,6 +37,67 @@ function getSessionPath(sessionId: string): string {
 }
 
 /**
+ * Generate a random 5-letter string
+ */
+function generateRandomString(length: number = 5): string {
+	const chars = 'abcdefghijklmnopqrstuvwxyz';
+	let result = '';
+	for (let i = 0; i < length; i++) {
+		result += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
+	return result;
+}
+
+/**
+ * Create a git worktree for the session
+ */
+function createWorktree(
+	workingDirectory: string,
+	branchName: string,
+): string | null {
+	try {
+		// Check if we're in a git repository
+		execSync('git rev-parse --git-dir', {
+			cwd: workingDirectory,
+			stdio: 'ignore',
+		});
+
+		// Get the git root directory
+		const gitRoot = execSync('git rev-parse --show-toplevel', {
+			cwd: workingDirectory,
+			encoding: 'utf-8',
+		}).trim();
+
+		// Create worktree directory path
+		const worktreePath = join(gitRoot, '..', 'worktrees', branchName);
+
+		// Get current branch to base the worktree on
+		const currentBranch = execSync('git branch --show-current', {
+			cwd: workingDirectory,
+			encoding: 'utf-8',
+		}).trim();
+
+		// Create the worktree with a new branch
+		execSync(
+			`git worktree add -b ${branchName} "${worktreePath}" ${
+				currentBranch || 'HEAD'
+			}`,
+			{
+				cwd: workingDirectory,
+				stdio: 'ignore',
+			},
+		);
+
+		return worktreePath;
+	} catch (error) {
+		// If worktree creation fails, log but don't throw
+		// This allows sessions to work even without git or if worktree fails
+		console.error('Failed to create worktree:', error);
+		return null;
+	}
+}
+
+/**
  * Create a new coding session
  */
 export function createSession(
@@ -47,10 +110,17 @@ export function createSession(
 	ensureSessionsDir();
 
 	const sessionId = randomUUID();
-	const shortId = sessionId.split('-')[0];
+	const randomSuffix = generateRandomString(5);
 	const tmuxSessionName = taskNumber
-		? `core-coding-task-${taskNumber}-${shortId}`
-		: `core-coding-${shortId}`;
+		? `task-${taskNumber}-${randomSuffix}`
+		: `core-coding-${randomSuffix}`;
+
+	// Create git worktree with the same naming pattern
+	const branchName = tmuxSessionName;
+	const worktreePath = createWorktree(workingDirectory, branchName);
+
+	// Use worktree path as working directory if created successfully
+	const sessionWorkingDir = worktreePath || workingDirectory;
 
 	const session: CodingSession = {
 		id: sessionId,
@@ -60,7 +130,9 @@ export function createSession(
 		taskDescription,
 		status: 'active',
 		startedAt: new Date().toISOString(),
-		workingDirectory,
+		workingDirectory: sessionWorkingDir,
+		worktreePath: worktreePath || undefined,
+		branchName: worktreePath ? branchName : undefined,
 		contextProvided,
 	};
 
@@ -126,20 +198,38 @@ export function loadAllSessions(): CodingSession[] {
 export function findSession(identifier: string): CodingSession | null {
 	const sessions = loadAllSessions();
 
+	// Try matching by exact tmux session name first (e.g., task-42-abcde)
+	const exactMatch = sessions.find(s => s.tmuxSessionName === identifier);
+	if (exactMatch) return exactMatch;
+
 	// Try matching by task number
 	if (identifier.startsWith('task-') || /^\d+$/.test(identifier)) {
-		const taskNum = Number.parseInt(identifier.replace('task-', ''), 10);
-		const session = sessions.find(
+		const taskNum = Number.parseInt(
+			identifier.replace(/^task-/, '').split('-')[0],
+			10,
+		);
+		const matchingSessions = sessions.filter(
 			s => s.taskNumber === taskNum && s.status !== 'completed',
 		);
-		if (session) return session;
+
+		if (matchingSessions.length === 0) return null;
+		if (matchingSessions.length === 1) return matchingSessions[0];
+
+		// Multiple sessions found - return null to trigger special handling
+		return null;
 	}
 
-	// Try matching by tmux session name
-	const session = sessions.find(s => s.tmuxSessionName === identifier);
-	if (session) return session;
-
 	return null;
+}
+
+/**
+ * Find all sessions for a task number
+ */
+export function findSessionsForTask(taskNumber: number): CodingSession[] {
+	const sessions = loadAllSessions();
+	return sessions.filter(
+		s => s.taskNumber === taskNumber && s.status !== 'completed',
+	);
 }
 
 /**
@@ -167,8 +257,6 @@ export function getActiveSessions(validateTmux = false): CodingSession[] {
 
 	// If validation is requested, check tmux and update status
 	if (validateTmux) {
-		const {tmuxSessionExists} = require('@/utils/tmux-manager');
-
 		return sessions.filter(session => {
 			const exists = tmuxSessionExists(session.tmuxSessionName);
 
@@ -193,9 +281,40 @@ export function getSessionsForTask(taskNumber: number): CodingSession[] {
 }
 
 /**
- * Delete session
+ * Remove git worktree
+ */
+function removeWorktree(worktreePath: string, branchName?: string): void {
+	try {
+		// Remove the worktree
+		execSync(`git worktree remove "${worktreePath}" --force`, {
+			stdio: 'ignore',
+		});
+
+		// Delete the branch if it exists
+		if (branchName) {
+			try {
+				execSync(`git branch -D ${branchName}`, {stdio: 'ignore'});
+			} catch {
+				// Branch might not exist or already deleted
+			}
+		}
+	} catch (error) {
+		console.error('Failed to remove worktree:', error);
+	}
+}
+
+/**
+ * Delete session and cleanup worktree
  */
 export function deleteSession(sessionId: string): void {
+	const session = loadSession(sessionId);
+
+	// Cleanup worktree if it exists
+	if (session?.worktreePath && session?.branchName) {
+		removeWorktree(session.worktreePath, session.branchName);
+	}
+
+	// Delete session file
 	const sessionPath = getSessionPath(sessionId);
 	if (existsSync(sessionPath)) {
 		unlinkSync(sessionPath);

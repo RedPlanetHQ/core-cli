@@ -28,6 +28,8 @@ interface ChatProps {
 	developmentMode?: DevelopmentMode; // Current development mode
 	mcpStatus?: string | null; // MCP connection status
 	isIncognitoMode?: boolean; // Incognito mode status
+	statusBarRefreshTrigger?: number; // Trigger to refresh status bar
+	onStatusBarRefresh?: () => void; // Callback to trigger status bar refresh
 }
 
 export default function UserInput({
@@ -40,6 +42,8 @@ export default function UserInput({
 	developmentMode = 'normal',
 	mcpStatus = null,
 	isIncognitoMode = false,
+	statusBarRefreshTrigger = 0,
+	onStatusBarRefresh,
 }: ChatProps) {
 	const {isFocused, focus} = useFocus({autoFocus: !disabled, id: 'user-input'});
 	const {colors} = useTheme();
@@ -64,7 +68,6 @@ export default function UserInput({
 	// Task mode state
 	const [isTaskMode, setIsTaskMode] = useState<boolean>(false);
 	const [taskAddedMessage, setTaskAddedMessage] = useState<string>('');
-	const [taskRefreshKey, setTaskRefreshKey] = useState<number>(0);
 
 	// Responsive placeholder text
 	const defaultPlaceholder = isNarrow
@@ -227,7 +230,7 @@ export default function UserInput({
 
 				setTaskAddedMessage(`Task #${taskNumber} added successfully!`);
 				setTimeout(() => setTaskAddedMessage(''), 3000);
-				setTaskRefreshKey(prev => prev + 1);
+				onStatusBarRefresh?.();
 
 				resetInput();
 				setTextInputKey(prev => prev + 1);
@@ -699,9 +702,9 @@ export default function UserInput({
 				)}
 			</Box>
 
-			{/* Status bar with development mode, MCP status, and task counts */}
+			{/* Status bar with development mode, MCP status, task counts, and sessions */}
 			<StatusBar
-				key={taskRefreshKey}
+				key={statusBarRefreshTrigger}
 				developmentMode={developmentMode}
 				mcpStatus={mcpStatus}
 				isIncognitoMode={isIncognitoMode}

@@ -39,11 +39,20 @@ function SessionsDisplay({sessions}: SessionsDisplayProps) {
 			<Box flexDirection="column" paddingY={1}>
 				<Text color="gray">No active coding sessions</Text>
 				<Text color="gray" dimColor>
-					Start a session with: /implement &lt;task#&gt;
+					Start a session with: @implement &lt;task#&gt;
 				</Text>
 			</Box>
 		);
 	}
+
+	// Helper to truncate task description
+	const truncateDescription = (
+		desc: string,
+		maxLength: number = 50,
+	): string => {
+		if (desc.length <= maxLength) return desc;
+		return desc.substring(0, maxLength) + '...';
+	};
 
 	return (
 		<Box flexDirection="column" paddingY={1}>
@@ -59,22 +68,19 @@ function SessionsDisplay({sessions}: SessionsDisplayProps) {
 					marginBottom={1}
 				>
 					<Text>
-						{index + 1}. [{session.agentName}]{' '}
-						{session.taskNumber ? `Task #${session.taskNumber}: ` : ''}
-						{session.taskDescription}
+						{index + 1}. <Text color="cyan">[{session.agentName}]</Text>{' '}
+						<Text color="yellow">{session.tmuxSessionName}</Text>
 					</Text>
 					<Text color="gray">
-						{'   '}Session: {session.tmuxSessionName}
+						{'   '}Task: {session.taskNumber ? `#${session.taskNumber} - ` : ''}
+						{truncateDescription(session.taskDescription)}
 					</Text>
 					<Text color="gray">
 						{'   '}Status: {session.status} | Started:{' '}
 						{formatDistanceToNow(new Date(session.startedAt))}
 					</Text>
 					<Text color="green">
-						{'   '}Attach: core-cli attach{' '}
-						{session.taskNumber
-							? `task-${session.taskNumber}`
-							: session.tmuxSessionName}
+						{'   '}Attach: core-cli sessions attach {session.tmuxSessionName}
 					</Text>
 				</Box>
 			))}
