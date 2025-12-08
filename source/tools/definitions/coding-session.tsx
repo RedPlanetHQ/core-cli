@@ -13,6 +13,7 @@ import {
 	getSessionsForTask,
 	deleteSession,
 	findSession,
+	loadAllSessions,
 } from '@/utils/coding-sessions';
 import {triggerStatusBarRefresh} from '@/utils/status-bar-events';
 import {
@@ -20,6 +21,7 @@ import {
 	killTmuxSession,
 	isTmuxInstalled,
 	isAgentInstalled,
+	tmuxSessionExists,
 } from '@/utils/tmux-manager';
 import {getAgentConfig} from '@/config/coding-agents';
 import {getConfig} from '@/config';
@@ -37,6 +39,7 @@ const launchCodingSessionCoreTool = tool({
 		agentName?: string;
 		contextPrompt?: string;
 		workingDirectory: string;
+		useWorktree?: boolean;
 	}>({
 		type: 'object',
 		properties: {
@@ -59,7 +62,13 @@ const launchCodingSessionCoreTool = tool({
 			},
 			workingDirectory: {
 				type: 'string',
-				description: 'Absolute path to the directory where the coding agent should work',
+				description:
+					'Absolute path to the directory where the coding agent should work',
+			},
+			useWorktree: {
+				type: 'boolean',
+				description:
+					'Whether to create a git worktree for this session (default: true). If true, a separate git worktree will be created for isolated work.',
 			},
 		},
 		required: ['taskDescription', 'workingDirectory'],
@@ -72,6 +81,7 @@ const executeLaunchCodingSession = async (args: {
 	agentName?: string;
 	contextPrompt?: string;
 	workingDirectory: string;
+	useWorktree?: boolean;
 }): Promise<string> => {
 	// Check tmux
 	if (!isTmuxInstalled()) {
@@ -79,7 +89,7 @@ const executeLaunchCodingSession = async (args: {
 	}
 
 	// Get config
-	const config = await getConfig();
+	const config = getConfig();
 	const agentName =
 		args.agentName ?? config.defaultCodingAgent ?? 'claude-code';
 
@@ -105,6 +115,9 @@ const executeLaunchCodingSession = async (args: {
 		}
 	}
 
+	// Default useWorktree to true if not specified
+	const useWorktree = args.useWorktree ?? true;
+
 	// Create session
 	const session = createSession(
 		agentName,
@@ -112,13 +125,26 @@ const executeLaunchCodingSession = async (args: {
 		args.taskDescription,
 		args.workingDirectory,
 		args.contextPrompt ?? `Task: ${args.taskDescription}`,
+		useWorktree,
 	);
+
+	// Build task description for context
+	let taskDescriptionWithContext = args.taskDescription;
+
+	// Build context prompt
+	let contextPrompt = args.contextPrompt ?? '';
+	if (useWorktree && session.worktreePath) {
+		const worktreeNote =
+			'\n\nIMPORTANT: You are working in a git worktree. You need to commit the changes before finishing.';
+		taskDescriptionWithContext += worktreeNote;
+		contextPrompt += worktreeNote;
+	}
 
 	// Build context
 	const context: TaskContext = {
-		taskDescription: args.taskDescription,
+		taskDescription: taskDescriptionWithContext,
 		taskNumber: args.taskNumber,
-		prompt: args.contextPrompt,
+		prompt: contextPrompt || undefined,
 	};
 
 	try {
@@ -152,6 +178,7 @@ const launchCodingSessionFormatter = async (
 		agentName?: string;
 		contextPrompt?: string;
 		workingDirectory: string;
+		useWorktree?: boolean;
 	},
 	result?: string,
 ): Promise<string> => {
@@ -164,6 +191,8 @@ const launchCodingSessionFormatter = async (
 	if (args.agentName) {
 		lines.push(`  Agent: ${args.agentName}`);
 	}
+	const useWorktree = args.useWorktree ?? true;
+	lines.push(`  Use Worktree: ${useWorktree ? 'yes' : 'no'}`);
 
 	if (result) {
 		lines.push('');
@@ -347,7 +376,7 @@ const executeDeleteCodingSession = async (args: {
 
 	try {
 		// Kill the tmux session if running
-		if (require('@/utils/tmux-manager').tmuxSessionExists(session.tmuxSessionName)) {
+		if (tmuxSessionExists(session.tmuxSessionName)) {
 			killTmuxSession(session.tmuxSessionName);
 		}
 
@@ -406,7 +435,6 @@ const clearCodingSessionsCoreTool = tool({
 });
 
 const executeClearCodingSessions = async (): Promise<string> => {
-	const {loadAllSessions} = require('@/utils/coding-sessions');
 	const sessions = loadAllSessions();
 
 	if (sessions.length === 0) {
@@ -419,7 +447,7 @@ const executeClearCodingSessions = async (): Promise<string> => {
 
 		for (const session of sessions) {
 			// Kill tmux session if running
-			if (require('@/utils/tmux-manager').tmuxSessionExists(session.tmuxSessionName)) {
+			if (tmuxSessionExists(session.tmuxSessionName)) {
 				killTmuxSession(session.tmuxSessionName);
 			}
 
@@ -436,9 +464,13 @@ const executeClearCodingSessions = async (): Promise<string> => {
 		// Trigger status bar refresh
 		triggerStatusBarRefresh();
 
-		let message = `SUCCESS: Cleared ${deletedCount} session${deletedCount !== 1 ? 's' : ''}`;
+		let message = `SUCCESS: Cleared ${deletedCount} session${
+			deletedCount !== 1 ? 's' : ''
+		}`;
 		if (worktreeCount > 0) {
-			message += `\nCleaned up ${worktreeCount} worktree${worktreeCount !== 1 ? 's' : ''}`;
+			message += `\nCleaned up ${worktreeCount} worktree${
+				worktreeCount !== 1 ? 's' : ''
+			}`;
 		}
 
 		return message;

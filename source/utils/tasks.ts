@@ -284,11 +284,10 @@ export async function readWeekTasks(): Promise<Task[]> {
 	if (!existsSync(filePath)) {
 		const migratedTasks = await migrateIncompleteTasks(currentWeekId);
 
-		// If we have migrated tasks, renumber them and write to the new file
+		// If we have migrated tasks, write to the new file (keep original numbers)
 		if (migratedTasks.length > 0) {
-			const renumberedTasks = renumberTasks(migratedTasks);
-			await writeWeekTasks(renumberedTasks);
-			return renumberedTasks;
+			await writeWeekTasks(migratedTasks);
+			return migratedTasks;
 		}
 
 		return [];

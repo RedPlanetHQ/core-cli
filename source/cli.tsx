@@ -13,11 +13,11 @@ const args = process.argv.slice(2);
 const command = args[0];
 const subcommand = args[1];
 
-// Handle sessions command
-if (command === 'sessions') {
+// Handle sessions command (with shortcut 's')
+if (command === 'sessions' || command === 's') {
 	handleSessionsCommand(subcommand, args[2]);
-} else if (command === 'tasks') {
-	// Handle tasks command
+} else if (command === 'tasks' || command === 't') {
+	// Handle tasks command (with shortcut 't')
 	void handleTasksCommand(subcommand, args.slice(2));
 } else if (command === 'attach') {
 	// Handle legacy attach subcommand (backwards compatibility)

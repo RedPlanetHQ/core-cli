@@ -106,6 +106,7 @@ export function createSession(
 	taskDescription: string,
 	workingDirectory: string,
 	contextProvided: string,
+	useWorktree: boolean = true,
 ): CodingSession {
 	ensureSessionsDir();
 
@@ -115,9 +116,11 @@ export function createSession(
 		? `task-${taskNumber}-${randomSuffix}`
 		: `core-coding-${randomSuffix}`;
 
-	// Create git worktree with the same naming pattern
+	// Create git worktree with the same naming pattern (only if useWorktree is true)
 	const branchName = tmuxSessionName;
-	const worktreePath = createWorktree(workingDirectory, branchName);
+	const worktreePath = useWorktree
+		? createWorktree(workingDirectory, branchName)
+		: null;
 
 	// Use worktree path as working directory if created successfully
 	const sessionWorkingDir = worktreePath || workingDirectory;
