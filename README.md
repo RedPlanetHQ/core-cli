@@ -1,116 +1,77 @@
-# Core CLI - AI-Powered Task Management That Never Forgets
-
-An intelligent task management system that remembers your entire world - your meetings, your tasks, your team discussions, your commitments - and seamlessly integrates with all your tools.
-
-Unlike traditional task managers or coding-focused CLIs like claude-code, Core CLI is built for task management with a persistent knowledge graph that connects your calendar, GitHub issues, Linear tickets, Slack messages, and conversations into one intelligent context.
-
-**The Problem**: Tasks scattered across GitHub, Linear, Slack, and your notes. No single view. No context. No memory.
-
-**Core CLI**: One unified task hub. All integrations. Forever remembered.
+# Core CLI - Your AI task manager that never forgets.
 
 [![npm version](https://badge.fury.io/js/%40redplanethq%2Fcore-cli.svg)](https://www.npmjs.com/package/@redplanethq/core-cli)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-## What Makes Core Different
 
-Core CLI is an AI-powered task management system with a beautiful GUI interface (similar to claude-code), built specifically for developers who want intelligent task organization without leaving the terminal.
+A terminal-first task manager powered by AI, with persistent memory across sessions. Built on [CORE](https://github.com/RedPlanetHQ/core) - so it actually remembers your projects, preferences, and past decisions.
+
+
+## The Problem
+
+You're juggling tasks across GitHub, Linear, Slack, and your notes. Every AI tool you use starts fresh - no memory of what you discussed yesterday, no context about your priorities, no understanding of your workflow.
+Core CLI changes that. One unified task hub. All your integrations. Memory that persists.
+
 
 ## What Can You Do?
 
-### Task Management
+### Unified Task Hub in Terminal
 
 ```bash
-# View your current tasks
-/tasks
-
 # Quick task entry mode
 --
-# → Enter task mode for rapid task creation
+> Fix the auth bug in user service
+> Review PR #234
+> Write tests for payment flow
+# Press enter to save all
 
-# Natural language task updates
-"Mark the Linear sync task as complete"
-"Move the GitHub PR review to next week"
-"Update the API design task to high priority"
+# Create tasks naturally
+"Add a task to review the API docs by Friday"
+"Create a high priority task for the security audit"
+
+# Talk to your tasks
+"What should I focus on today?"
+"Show me all tasks related to authentication"
+"Mark task 5 as done and move task 8 to in progress"
+"What's blocking me this week?"
 ```
 
-### Integration-Powered Task Sync
+### Sync with Your Task Assistant
 
 ```bash
-# Smart routine to sync across all your tools
 @sync
-# → Checks GitHub, Linear, Slack for updates
-# → Creates tasks for items needing attention
-# → Updates existing tasks with changes
-# → Helps you prioritize what matters
-
-# Task queries with context
-"What should I focus on this week?"
-# → Analyzes your calendar, sprint commitments, GitHub PRs, Linear tickets
-
-# Meeting prep with task context
-"Prep me for standup"
-# → Summarizes tasks completed, blockers, references team discussions
 ```
+Like a morning standup with your AI assistant. It:
 
-### Document-Aware Task Management
+1. Checks integrations - Checks what all apps are connected with CORE
+2. Scans for new work - If something popped up from recent activity in Github, Linear, Slack, Calendar, Gmail (bug assigned, PR review requested, Slack mention, new email), it searches for relevant context
+3. Reviews your task list - Analyzes your current tasks for any updates or priority changes
+4. Tells you what to focus on - Summarizes what's happening and recommends what needs your attention now
+
+
+### Delegate Tasks to Coding Agents
 
 ```bash
-# Reference documents created in Core
-"@linear-product-doc write the following features as tasks"
-"@meeting-notes create tasks from action items"
-"@sprint-planning-doc add these to my weekly tasks"
+# Natural language delegation
+"Implement task 42"
+"Start working on the auth refactor using Cursor"
+"Delegate the API tests to Aider"
 
-# Context-aware queries
-"What did we decide about the API redesign last week?"
-"Find all tasks related to the authentication feature"
-"What commitments did I make in Monday's meeting?"
+# Or use the routine
+@implement 42
+@implement 15 cursor
 ```
 
-### Intelligent Task Organization
+Launches your preferred coding agent (Claude Code, Cursor, Aider) in an isolated environment:
 
-```bash
-# Automatic weekly organization
-# Tasks stored in weekly files: 2025-W48.md
-# Incomplete tasks automatically roll over to next week
+- Creates a new git branch (task-42-abc123)
+- Spins up a separate worktree (no conflicts with your main work)
+- Runs in a tmux session (continues in background)
+- Passes full task context to the agent
 
-# Time-aware prioritization
-"I have 3 hours before my 2pm meeting, what tasks should I tackle?"
-# → Considers your calendar, task priorities, and past completion patterns
-```
+Work on multiple tasks in parallel. Switch between them freely.
 
-## How It Works
-
-```
-Your World                Knowledge Graph              Your AI Tools
-───────────              ────────────────────              ─────────────
-Gmail          ─────▶                            ─────▶    CLI
-Calendar       ─────▶    Temporal Memory         ─────▶    IDE Extensions
-GitHub         ─────▶    88% Recall Accuracy     ─────▶    Browser
-Slack          ─────▶    Cross-Domain Links      ─────▶    Mobile
-Linear         ─────▶    Entity Relationships    ─────▶    Any LLM
-Google Docs    ─────▶    Event Timelines         ─────▶    API
-Sheets         ─────▶    Smart Clustering        ─────▶    Everywhere
-```
-
-One memory layer. All your context. Every AI tool.
-
-## Key Features
-
-- **AI-Powered Task Management** - Update and manage tasks using natural language
-- **Persistent Memory** - Temporal knowledge graph that remembers all context and conversations
-- **Weekly Task Files** - Automatic markdown files (2025-W48 format) organized by week
-- **Smart Task Rollover** - Incomplete tasks automatically move to next week
-- **Quick Task Mode** - Use `--` to instantly enter rapid task creation mode
-- **Integration Hub** - Native GitHub, Linear, and Slack integrations for unified task management
-- **Smart Sync Routines** - Built-in routines check integrations, create tasks, and help prioritize
-- **Document References** - Use `@` command to reference and work with Core documents
-- **Conversation Linking** - All tasks automatically linked to conversations for full context
-- **CLI-First Design** - Fast, efficient task management directly from your terminal
-- **Data Ownership** - You own your task history and knowledge graph
-
-## Installation
-
-### Quick Start
+## Quick Start
 
 ```bash
 # Install globally
@@ -120,70 +81,66 @@ pnpm install -g @redplanethq/core-cli
 core-cli
 ```
 
-Or use directly with pnpm:
+On first run, you'll:
 
-```bash
-pnpm dlx @redplanethq/core-cli
+1. Connect your AI provider (OpenAI, Anthropic)
+2. Link your CORE account (for memory + integrations)
+3. Optionally connect GitHub, Linear, Slack
+
+That's it. Start talking to your tasks.
+
+
+## How It Works
+
+```
+┌─────────────────────────────────────────┐
+│           Core CLI (You)                │
+└─────────────┬───────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────────────┐
+│        AI Provider (LLM)                │
+│    OpenAI / Anthropic / Custom          │
+└─────────────┬───────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────────────┐
+│      Core Memory (Knowledge Graph)       │
+│  • Temporal relationships                │
+│  • Cross-domain links                    │
+│  • Entity extraction                     │
+│  • Smart clustering                      │
+└─────────────┬───────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────────────┐
+│     MCP Servers (Via CORE)              │
+│  Gmail • Calendar • GitHub • Linear     │
+│  Docs • Sheets • Slack • File System    │
+└─────────────────────────────────────────┘
 ```
 
-### First Run Setup
+### Why CORE? 
 
-On first run, the configuration wizard will guide you through:
+CORE is your second brain - a temporal knowledge graph that remembers what you're working on, what decisions you made, when and why you made them, and how your thinking evolved.
 
-1. **Choose your AI provider** - OpenAI, Anthropic, or other supported models
-2. **Configure API keys** - Set up your preferred LLM
-3. **Connect integrations** - Link Gmail, Calendar, GitHub, Linear, etc.
-4. **Build your knowledge graph** - Core ingests your past conversations and data
-5. **Customize preferences** - Set your assistant name, theme, and defaults
+Core CLI uses CORE for two things:
 
-Configuration files are stored in your system's standard config directory.
+**Persistent Memory**
 
-### Environment Variables
+- Every task you create and every conversation you have is automatically stored in CORE
+- When you chat in Core CLI, it searches your memory first for relevant context
+- Store knowledge about your projects, codebase, and preferences - the task manager pulls it on-demand
 
-Set your AI provider API keys as environment variables:
+Example: You're brainstorming "Add user authentication API". Core CLI auto-searches your memory for past auth discussions, your preferred patterns, related decisions - context that actually helps.
 
-```bash
-# For OpenAI
-export OPENAI_API_KEY=your_openai_key_here
+**Access to Integrations**
 
-# For Anthropic
-export ANTHROPIC_API_KEY=your_anthropic_key_here
+- CORE connects to apps like Gmail, Linear, GitHub via MCP
+- Connect once to CORE → Core CLI can read and act in all of them
+- Pull tasks from these apps into your CLI task list automatically
+- Take actions: send emails, close issues, create tickets - offload the grunt work
 
-# For Core Memory (if using hosted Core)
-export CORE_API_KEY=your_core_api_key_here
-```
-
-## Requirements
-
-- Node.js >= 20
-- Active internet connection for AI provider access
-- (Optional) Core account for hosted knowledge graph
-
-## Features
-
-### Interactive Chat Interface
-
-Conversational AI assistant directly in your terminal with real-time streaming responses.
-
-### Multiple AI Providers
-
-Support for various AI models:
-
-- OpenAI (GPT-4, GPT-4 Turbo, GPT-3.5)
-- Anthropic (Claude 3.5 Sonnet, Claude 3 Opus)
-- More providers coming soon
-
-### MCP (Model Context Protocol) Integration
-
-Enhanced capabilities through MCP servers:
-
-- Integrate with external systems and APIs
-- Extend functionality with custom MCP servers
-- Connect to GitHub, Linear, Slack, and more
-
-### Token Usage Tracking
-
-Monitor your token consumption across conversations and sessions.
 
 ## Commands
 
@@ -191,16 +148,13 @@ Monitor your token consumption across conversations and sessions.
 
 | Command     | Description                                           |
 | ----------- | ----------------------------------------------------- |
-| `/help`     | Display help information and available commands       |
 | `/tasks`    | View your current tasks                               |
-| `/sessions` | View all active coding agent sessions                 |
 | `--`        | Enter quick task mode for rapid task creation         |
-| `sync`      | Run smart routine to sync integrations and prioritize |
+| `@sync`     | Run smart routine to sync integrations and prioritize |
+| `/sessions` | View all active coding agent sessions                 |
 | `/clear`    | Clear conversation history (memory persists)          |
 | `/model`    | Select a different AI model                           |
 | `/provider` | Change AI provider                                    |
-| `/mcp`      | Manage MCP (Model Context Protocol) servers           |
-| `/usage`    | View token usage statistics                           |
 | `/set-name` | Customize your assistant's name                       |
 
 ### CLI Commands
@@ -208,56 +162,40 @@ Monitor your token consumption across conversations and sessions.
 #### Task Management
 
 ```bash
-# List all tasks
-core-cli tasks list
-
-# Add a new task
-core-cli tasks add "Implement user authentication API"
-
-# Update an existing task
-core-cli tasks update 42 "Updated task description"
-
-# Delete a task
-core-cli tasks delete 42
-
-# View help
-core-cli tasks help
+core-cli tasks list          # List all tasks
+core-cli tasks add "..."     # Add task
+core-cli sessions list       # Show coding sessions
+core-cli sessions attach 42  # Attach to task session
 ```
 
-#### Session Management
 
-```bash
-# List all active coding agent sessions
-core-cli sessions list
-
-# Attach to a session
-core-cli sessions attach task-42-abcde
-core-cli sessions attach 42  # If only one session for task 42
-
-# Delete a specific session
-core-cli sessions delete task-42-abcde
-
-# Clear all sessions
-core-cli sessions clear
-
-# View help
-core-cli sessions help
-```
 
 ## Coding Agents & Task Delegation
 
 Core CLI can delegate implementation work to AI coding agents like Claude Code, Cursor, Aider, and others. These agents run in isolated tmux sessions with their own git worktrees, allowing you to work on multiple tasks in parallel without conflicts.
 
-### Supported Coding Agents
+```bash
+# In core-cli chat
+"Implement task 5"
 
-Core CLI supports the following coding agents out of the box:
+# Output:
+# ⚡ Launched Claude Code in session "task-5-xfgpq"
+# Attach: core-cli sessions attach task-5-xfgpq
 
-| Agent         | Description                                    | Installation                          |
-| ------------- | ---------------------------------------------- | ------------------------------------- |
-| **Claude Code** | Anthropic's official CLI for Claude          | `npm install -g @anthropic/claude-code` |
-| **Cursor AI**   | AI-first code editor                         | Download from [cursor.sh](https://cursor.sh) |
-| **Aider**       | AI pair programming in your terminal         | `pip install aider-chat`              |
-| **Codex CLI**   | OpenAI Codex command-line interface          | Custom installation                   |
+# Work on it
+core-cli sessions attach task-5-xfgpq
+
+# When done: Ctrl+B, D to detach
+```
+
+Supported agents:
+
+- Claude Code (npm install -g @anthropic/claude-code)
+- Cursor AI
+- Aider (pip install aider-chat)
+- Codex CLI
+
+Requirements: tmux, git
 
 ### Setting Default Coding Agent
 
@@ -269,116 +207,6 @@ You can set your preferred coding agent in the CLI:
 
 # Or ask naturally
 "Set my default coding agent to Claude Code"
-```
-
-### Task Delegation Workflow
-
-#### 1. Using Natural Language (Recommended)
-
-The AI assistant can automatically launch coding agents for you:
-
-```bash
-# Inside core-cli chat
-"Implement task 42"
-"Start working on task 15 using Cursor"
-"Delegate the API implementation to Aider"
-```
-
-The assistant will:
-- Validate the task exists
-- Launch the specified coding agent in a tmux session
-- Create an isolated git worktree for the task
-- Pass task context to the agent
-- Show you how to attach to the session
-
-#### 2. Using the @implement Routine
-
-Core CLI has a built-in routine for task delegation:
-
-```bash
-# Inside core-cli chat
-@implement 42           # Implement task #42 with default agent
-@implement 15 cursor    # Implement task #15 with Cursor
-```
-
-#### 3. Programmatic Access (Advanced)
-
-The AI assistant has access to coding session tools and can:
-- Launch sessions with custom context
-- List active sessions
-- Close or delete sessions
-- Monitor session status
-
-### How Git Worktrees Work
-
-When you delegate a task, Core CLI automatically:
-
-1. **Creates a new git branch** named `task-{number}-{random}` (e.g., `task-42-abcde`)
-2. **Creates a git worktree** in `../worktrees/task-42-abcde/`
-3. **Launches the coding agent** in that worktree directory
-4. **Runs in isolated tmux session** so it doesn't interfere with your main work
-
-**Benefits:**
-- Work on multiple tasks in parallel without git conflicts
-- Each task has its own clean workspace
-- Easy to switch between tasks
-- Automatic cleanup when session is deleted
-
-### Managing Active Sessions
-
-#### List Sessions
-
-```bash
-# Inside core-cli chat
-/sessions
-
-# Or via CLI
-core-cli sessions list
-```
-
-Output shows:
-- Agent name (e.g., [Claude Code])
-- Session name (e.g., task-42-abcde)
-- Task description preview
-- Session status and start time
-- Git worktree location
-- Attach command
-
-#### Attach to a Session
-
-```bash
-# Via CLI
-core-cli sessions attach task-42-abcde
-core-cli sessions attach 42  # If only one session for this task
-
-# Inside tmux session
-# Press Ctrl+B then D to detach
-```
-
-#### Delete a Session
-
-Deleting a session will:
-- Kill the tmux session
-- Remove the git worktree
-- Delete the git branch
-- Clean up all session metadata
-
-```bash
-# Via CLI
-core-cli sessions delete task-42-abcde
-
-# Via chat (AI will use the tool)
-"Delete the session for task 42"
-```
-
-#### Clear All Sessions
-
-```bash
-# Via CLI
-core-cli sessions clear
-
-# Via chat
-"Clear all coding sessions"
 ```
 
 ### Example Workflow
@@ -494,66 +322,6 @@ pnpm run build
 pnpm run dev
 ```
 
-## Architecture
-
-Core CLI is built on three key components:
-
-1. **CLI Interface** - React + Ink for beautiful terminal UI
-2. **Core Memory API** - Temporal knowledge graph with 88% recall accuracy
-3. **MCP Integration Layer** - Model Context Protocol for tool execution
-
-```
-┌─────────────────────────────────────────┐
-│           Core CLI (You)                │
-└─────────────┬───────────────────────────┘
-              │
-              ▼
-┌─────────────────────────────────────────┐
-│        AI Provider (LLM)                │
-│    OpenAI / Anthropic / Custom          │
-└─────────────┬───────────────────────────┘
-              │
-              ▼
-┌─────────────────────────────────────────┐
-│      Core Memory (Knowledge Graph)       │
-│  • Temporal relationships                │
-│  • Cross-domain links                    │
-│  • Entity extraction                     │
-│  • Smart clustering                      │
-└─────────────┬───────────────────────────┘
-              │
-              ▼
-┌─────────────────────────────────────────┐
-│     MCP Servers (Integrations)          │
-│  Gmail • Calendar • GitHub • Linear     │
-│  Docs • Sheets • Slack • File System    │
-└─────────────────────────────────────────┘
-```
-
-## Use Cases
-
-### For Individual Developers
-
-- **Never Lose Context** - All your tasks, conversations, and decisions remembered across sessions
-- **Unified Task Hub** - Manage GitHub issues, Linear tickets, and personal tasks in one place
-- **Smart Prioritization** - AI helps you decide what to work on based on deadlines and context
-- **Automatic Organization** - Weekly task files with smart rollover keep you organized without effort
-- **Integration Magic** - Sync routine pulls updates from all your tools and creates actionable tasks
-- **Document-Linked Tasks** - Reference meeting notes, design docs, and specifications directly in tasks
-- **CLI Speed** - Beautiful GUI interface without leaving the terminal
-- **Your Data** - Complete ownership and control of your task history and knowledge graph
-
-## Roadmap
-
-- [ ] Advanced task analytics and insights
-- [ ] More integration connectors (Jira, Asana, Trello)
-- [ ] Custom routine builder
-- [ ] Task templates and recurring tasks
-- [ ] Self-hosted Core memory option
-- [ ] Mobile companion app
-- [ ] Advanced memory visualization
-- [ ] Custom MCP server marketplace
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -568,9 +336,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 - **Issues**: [Report bugs or request features](https://github.com/RedPlanetHQ/core-cli/issues)
 - **Discussions**: [Join the conversation](https://github.com/RedPlanetHQ/core-cli/discussions)
-- **Documentation**: [Full docs](https://docs.core.ai)
-- **Twitter**: [@RedPlanetHQ](https://twitter.com/RedPlanetHQ)
-- **Discord**: [Join our community](https://discord.gg/redplanethq)
+- **Discord**: [Join our community](https://discord.gg/YGUZcvDjUa)
 
 ## License
 
