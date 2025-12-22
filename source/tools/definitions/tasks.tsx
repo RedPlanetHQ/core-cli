@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/require-await */
 import {tool, jsonSchema} from '@/types/core';
-import type {ToolDefinition} from '@/types/index';
+import type {CoreToolExport} from '@/types/index';
 import {
 	readWeekTasks,
 	writeWeekTasks,
@@ -61,6 +61,11 @@ const newTaskCoreTool = tool({
 		},
 		required: ['description'],
 	}),
+
+	needsApproval: true,
+	execute: async (args, _options) => {
+		return await executeNewTask(args);
+	},
 });
 
 const executeNewTask = async (args: {
@@ -92,7 +97,7 @@ const newTaskFormatter = async (
 	args: {description: string; tags?: string[]; priority?: Priority},
 	result?: string,
 ): Promise<string> => {
-	const lines: string[] = ['⚒ new_task'];
+	const lines: string[] = [];
 	lines.push(`└ Description: ${args.description}`);
 
 	if (args.tags && args.tags.length > 0) {
@@ -116,14 +121,14 @@ const newTaskValidator = async (args: {
 	priority?: Priority;
 }): Promise<{valid: true} | {valid: false; error: string}> => {
 	if (!args.description || args.description.trim().length === 0) {
-		return {valid: false, error: '⚒ Task description cannot be empty'};
+		return {valid: false, error: '● Task description cannot be empty'};
 	}
 
 	if (args.priority) {
 		if (!['high', 'medium', 'low'].includes(args.priority)) {
 			return {
 				valid: false,
-				error: '⚒ Priority must be one of: high, medium, low',
+				error: '● Priority must be one of: high, medium, low',
 			};
 		}
 	}
@@ -131,10 +136,9 @@ const newTaskValidator = async (args: {
 	return {valid: true};
 };
 
-export const newTaskTool: ToolDefinition = {
+export const newTaskTool: CoreToolExport = {
 	name: 'new_task',
 	tool: newTaskCoreTool,
-	handler: executeNewTask,
 	formatter: newTaskFormatter,
 	validator: newTaskValidator,
 };
@@ -179,6 +183,11 @@ const updateTaskCoreTool = tool({
 		},
 		required: ['taskNumber'],
 	}),
+
+	needsApproval: true,
+	execute: async (args, _options) => {
+		return await executeUpdateTask(args);
+	},
 });
 
 const executeUpdateTask = async (args: {
@@ -247,7 +256,7 @@ const updateTaskFormatter = async (
 	},
 	result?: string,
 ): Promise<string> => {
-	const lines: string[] = ['⚒ update_task'];
+	const lines: string[] = [];
 	lines.push(`└ Task Number: #${args.taskNumber}`);
 
 	if (args.state) {
@@ -284,7 +293,7 @@ const updateTaskValidator = async (args: {
 	priority?: Priority | null;
 }): Promise<{valid: true} | {valid: false; error: string}> => {
 	if (args.taskNumber < 1) {
-		return {valid: false, error: '⚒ Task number must be positive'};
+		return {valid: false, error: '● Task number must be positive'};
 	}
 
 	if (
@@ -293,7 +302,7 @@ const updateTaskValidator = async (args: {
 	) {
 		return {
 			valid: false,
-			error: '⚒ State must be one of: todo, in_progress, completed',
+			error: '● State must be one of: todo, in_progress, completed',
 		};
 	}
 
@@ -304,7 +313,7 @@ const updateTaskValidator = async (args: {
 	) {
 		return {
 			valid: false,
-			error: '⚒ Priority must be one of: high, medium, low, or null',
+			error: '● Priority must be one of: high, medium, low, or null',
 		};
 	}
 
@@ -317,17 +326,16 @@ const updateTaskValidator = async (args: {
 		return {
 			valid: false,
 			error:
-				'⚒ At least one field must be provided (state, description, tags, or priority)',
+				'● At least one field must be provided (state, description, tags, or priority)',
 		};
 	}
 
 	return {valid: true};
 };
 
-export const updateTaskTool: ToolDefinition = {
+export const updateTaskTool: CoreToolExport = {
 	name: 'update_task',
 	tool: updateTaskCoreTool,
-	handler: executeUpdateTask,
 	formatter: updateTaskFormatter,
 	validator: updateTaskValidator,
 };
@@ -346,6 +354,11 @@ const deleteTaskCoreTool = tool({
 		},
 		required: ['taskNumber'],
 	}),
+
+	needsApproval: true,
+	execute: async (args, _options) => {
+		return await executeDeleteTask(args);
+	},
 });
 
 const executeDeleteTask = async (args: {
@@ -373,7 +386,7 @@ const deleteTaskFormatter = async (
 	args: {taskNumber: number},
 	result?: string,
 ): Promise<string> => {
-	const lines: string[] = ['⚒ delete_task'];
+	const lines: string[] = [];
 	lines.push(`└ Task Number: #${args.taskNumber}`);
 
 	if (result) {
@@ -387,7 +400,7 @@ const deleteTaskValidator = async (args: {
 	taskNumber: number;
 }): Promise<{valid: true} | {valid: false; error: string}> => {
 	if (args.taskNumber < 1) {
-		return {valid: false, error: '⚒ Task number must be positive'};
+		return {valid: false, error: '● Task number must be positive'};
 	}
 
 	const tasks = await readWeekTasks();
@@ -396,17 +409,16 @@ const deleteTaskValidator = async (args: {
 	if (!taskExists) {
 		return {
 			valid: false,
-			error: `⚒ Task #${args.taskNumber} not found in current week`,
+			error: `● Task #${args.taskNumber} not found in current week`,
 		};
 	}
 
 	return {valid: true};
 };
 
-export const deleteTaskTool: ToolDefinition = {
+export const deleteTaskTool: CoreToolExport = {
 	name: 'delete_task',
 	tool: deleteTaskCoreTool,
-	handler: executeDeleteTask,
 	formatter: deleteTaskFormatter,
 	validator: deleteTaskValidator,
 };
@@ -426,6 +438,11 @@ const listTasksCoreTool = tool({
 			},
 		},
 	}),
+
+	needsApproval: false,
+	execute: async (args, _options) => {
+		return await executeListTasks(args);
+	},
 });
 
 const executeListTasks = async (args: {state?: TaskState}): Promise<string> => {
@@ -509,7 +526,7 @@ const listTasksFormatter = async (
 	args: {state?: TaskState},
 	result?: string,
 ): Promise<string> => {
-	const lines: string[] = ['⚒ list_tasks'];
+	const lines: string[] = [];
 
 	if (args.state) {
 		lines.push(`└ Filter: ${args.state}`);
@@ -525,10 +542,9 @@ const listTasksFormatter = async (
 	return lines.join('\n');
 };
 
-export const listTasksTool: ToolDefinition = {
+export const listTasksTool: CoreToolExport = {
 	name: 'list_tasks',
 	tool: listTasksCoreTool,
-	handler: executeListTasks,
 	formatter: listTasksFormatter,
 };
 
@@ -552,6 +568,10 @@ const searchTasksCoreTool = tool({
 		},
 		required: ['query'],
 	}),
+	needsApproval: false,
+	execute: async (args, _options) => {
+		return await executeSearchTasks(args);
+	},
 });
 
 const executeSearchTasks = async (args: {
@@ -620,7 +640,7 @@ const searchTasksFormatter = async (
 	args: {query: string; state?: TaskState},
 	result?: string,
 ): Promise<string> => {
-	const lines: string[] = ['⚒ search_tasks'];
+	const lines: string[] = [];
 	lines.push(`└ Query: ${args.query}`);
 
 	if (args.state) {
@@ -639,16 +659,15 @@ const searchTasksValidator = async (args: {
 	state?: TaskState;
 }): Promise<{valid: true} | {valid: false; error: string}> => {
 	if (!args.query || args.query.trim().length === 0) {
-		return {valid: false, error: '⚒ Search query cannot be empty'};
+		return {valid: false, error: '● Search query cannot be empty'};
 	}
 
 	return {valid: true};
 };
 
-export const searchTasksTool: ToolDefinition = {
+export const searchTasksTool: CoreToolExport = {
 	name: 'search_tasks',
 	tool: searchTasksCoreTool,
-	handler: executeSearchTasks,
 	formatter: searchTasksFormatter,
 	validator: searchTasksValidator,
 };

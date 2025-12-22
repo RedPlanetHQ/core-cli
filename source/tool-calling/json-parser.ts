@@ -241,8 +241,14 @@ export function cleanJSONToolCalls(
 
 	// Clean up extra whitespace and newlines
 	cleanedContent = cleanedContent
-		.replace(/\n\s*\n\s*\n/g, '\n\n') // Reduce multiple newlines to double
-		.replace(/^\s*\n+|\n+\s*$/g, '') // Remove leading/trailing newlines
+		// Remove trailing whitespace from each line
+		.replace(/[ \t]+$/gm, '')
+		// Collapse multiple spaces (but not at start of line for indentation)
+		.replace(/([^ \t\n]) {2,}/g, '$1 ')
+		// Remove lines that are only whitespace
+		.replace(/^[ \t]+$/gm, '')
+		// Collapse 2+ consecutive blank lines to a single blank line
+		.replace(/\n{3,}/g, '\n\n')
 		.trim();
 
 	return cleanedContent;

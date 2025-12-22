@@ -23,7 +23,6 @@ import {
 import {useChatHandler} from './hooks/useChatHandler';
 import ChatQueue from './components/chat-queue';
 import CancellingIndicator from './components/cancelling-indicator';
-import ThinkingIndicator from './components/thinking-indicator';
 import ThemeSelector from './components/theme-selector';
 import {ConfigWizard} from './wizard/config-wizard';
 import ToolConfirmation from './components/tool-confirmation';
@@ -36,10 +35,81 @@ import CodingAgentSelector from './components/coding-agent-selector';
 import NameSelector from './components/name-selector';
 import {getAssistantName} from './config/preferences';
 import {appConfig} from './config/index';
+import {setCurrentMode as setCurrentModeContext} from '@/context/mode-context';
+
+export function shouldRenderWelcome(nonInteractiveMode?: boolean) {
+	return !nonInteractiveMode;
+}
+
+/**
+ * Helper function to determine if non-interactive mode processing is complete
+ */
+export function isNonInteractiveModeComplete(
+	appState: {
+		isToolExecuting: boolean;
+		isBashExecuting: boolean;
+		isToolConfirmationMode: boolean;
+		isConversationComplete: boolean;
+		messages: Array<{role: string; content: string}>;
+	},
+	startTime: number,
+	maxExecutionTimeMs: number,
+): {
+	shouldExit: boolean;
+	reason: 'complete' | 'timeout' | 'error' | 'tool-approval' | null;
+} {
+	const isComplete =
+		!appState.isToolExecuting &&
+		!appState.isBashExecuting &&
+		!appState.isToolConfirmationMode;
+	const _hasMessages = appState.messages.length > 0;
+	const hasTimedOut = Date.now() - startTime > maxExecutionTimeMs;
+
+	// Check for error messages in the messages array
+	const hasErrorMessages = appState.messages.some(
+		(message: {role: string; content: string}) =>
+			message.role === 'error' ||
+			(typeof message.content === 'string' &&
+				message.content.toLowerCase().includes('error')),
+	);
+
+	// Check for tool approval required messages
+	const hasToolApprovalRequired = appState.messages.some(
+		(message: {role: string; content: string}) =>
+			typeof message.content === 'string' &&
+			message.content.includes('Tool approval required'),
+	);
+
+	if (hasTimedOut) {
+		return {shouldExit: true, reason: 'timeout'};
+	}
+
+	if (hasToolApprovalRequired) {
+		return {shouldExit: true, reason: 'tool-approval'};
+	}
+
+	if (hasErrorMessages) {
+		return {shouldExit: true, reason: 'error'};
+	}
+
+	// Exit when conversation is complete and either:
+	// - We have messages in history (for chat/bash commands), OR
+	// - Conversation is marked complete (for display-only commands like /mcp)
+	if (isComplete && appState.isConversationComplete) {
+		return {shouldExit: true, reason: 'complete'};
+	}
+
+	return {shouldExit: false, reason: null};
+}
 
 export default function App() {
 	// Use extracted hooks
 	const appState = useAppState();
+
+	// Sync global mode context whenever development mode changes
+	React.useEffect(() => {
+		setCurrentModeContext(appState.developmentMode);
+	}, [appState.developmentMode]);
 
 	// Setup initialization
 	const appInitialization = useAppInitialization({
@@ -119,7 +189,6 @@ export default function App() {
 		messages: appState.messages,
 		setMessages: appState.updateMessages,
 		currentModel: appState.currentModel,
-		setIsThinking: appState.setIsThinking,
 		setIsCancelling: appState.setIsCancelling,
 		addToChatQueue: appState.addToChatQueue,
 		componentKeyCounter: appState.componentKeyCounter,
@@ -144,6 +213,10 @@ export default function App() {
 				systemMessage,
 			});
 			appState.setIsToolConfirmationMode(true);
+		},
+		onConversationComplete: () => {
+			// Signal that the conversation has completed
+			appState.setIsConversationComplete(true);
 		},
 	});
 
@@ -270,7 +343,12 @@ export default function App() {
 			const modes: Array<'normal' | 'auto-accept'> = ['normal', 'auto-accept'];
 			const currentIndex = modes.indexOf(currentMode);
 			const nextIndex = (currentIndex + 1) % modes.length;
-			return modes[nextIndex];
+			const nextMode = modes[nextIndex];
+
+			// Sync global mode context for tool needsApproval logic
+			setCurrentModeContext(nextMode);
+
+			return nextMode;
 		});
 	}, [appState]);
 
@@ -298,11 +376,7 @@ export default function App() {
 					</Box>
 					{appState.startChat && (
 						<Box flexDirection="column" marginLeft={-1}>
-							{appState.isCancelling ? (
-								<CancellingIndicator />
-							) : appState.isThinking && !chatHandler.isStreaming ? (
-								<ThinkingIndicator />
-							) : null}
+							{appState.isCancelling && <CancellingIndicator />}
 
 							{chatHandler.isStreaming && chatHandler.streamingContent && (
 								<Box flexDirection="column" marginBottom={1}>
@@ -382,7 +456,7 @@ export default function App() {
 									customCommands={[]}
 									onSubmit={msg => void handleMessageSubmit(msg)}
 									disabled={
-										appState.isThinking ||
+										chatHandler.isStreaming ||
 										appState.isToolExecuting ||
 										appState.isBashExecuting
 									}

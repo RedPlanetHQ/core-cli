@@ -17,7 +17,6 @@ export interface CodingSession {
 	workingDirectory: string;
 	worktreePath?: string; // Git worktree path (if created)
 	branchName?: string; // Git branch name for the worktree
-	contextProvided: string; // Summary of context passed to agent
 }
 
 export interface TaskContext {

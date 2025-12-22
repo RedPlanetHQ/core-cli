@@ -8,6 +8,7 @@ export interface AIProviderConfig {
 	models: string[];
 	requestTimeout?: number;
 	socketTimeout?: number;
+	maxRetries?: number; // Maximum number of retries for failed requests (default: 2)
 	connectionPool?: {
 		idleTimeout?: number;
 		cumulativeMaxIdleTimeout?: number;
@@ -27,6 +28,7 @@ export interface ProviderConfig {
 	models: string[];
 	requestTimeout?: number;
 	socketTimeout?: number;
+	maxRetries?: number; // Maximum number of retries for failed requests (default: 2)
 	organizationId?: string;
 	timeout?: number;
 	connectionPool?: {

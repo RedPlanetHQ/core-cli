@@ -105,7 +105,6 @@ export function createSession(
 	taskNumber: number | undefined,
 	taskDescription: string,
 	workingDirectory: string,
-	contextProvided: string,
 	useWorktree: boolean = true,
 ): CodingSession {
 	ensureSessionsDir();
@@ -136,7 +135,6 @@ export function createSession(
 		workingDirectory: sessionWorkingDir,
 		worktreePath: worktreePath || undefined,
 		branchName: worktreePath ? branchName : undefined,
-		contextProvided,
 	};
 
 	saveSession(session);

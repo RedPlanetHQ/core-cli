@@ -45,8 +45,9 @@ export function useAppState() {
 	const [mcpStatus, setMcpStatus] = useState<string | null>(null);
 
 	// Thinking indicator state
-	const [isThinking, setIsThinking] = useState<boolean>(false);
 	const [isCancelling, setIsCancelling] = useState<boolean>(false);
+	const [isConversationComplete, setIsConversationComplete] =
+		useState<boolean>(false);
 
 	// Cancellation state
 	const [abortController, setAbortController] =
@@ -80,7 +81,8 @@ export function useAppState() {
 	const [isIncognitoMode, setIsIncognitoMode] = useState<boolean>(false);
 
 	// Status bar refresh trigger
-	const [statusBarRefreshTrigger, setStatusBarRefreshTrigger] = useState<number>(0);
+	const [statusBarRefreshTrigger, setStatusBarRefreshTrigger] =
+		useState<number>(0);
 	const triggerStatusBarRefresh = useCallback(() => {
 		setStatusBarRefreshTrigger(prev => prev + 1);
 	}, []);
@@ -95,8 +97,12 @@ export function useAppState() {
 		useState<ConversationContext | null>(null);
 
 	// Chat queue for components - split into static (rendered) and queued (new)
-	const [staticChatComponents, setStaticChatComponents] = useState<React.ReactNode[]>([]);
-	const [queuedChatComponents, setQueuedChatComponents] = useState<React.ReactNode[]>([]);
+	const [staticChatComponents, setStaticChatComponents] = useState<
+		React.ReactNode[]
+	>([]);
+	const [queuedChatComponents, setQueuedChatComponents] = useState<
+		React.ReactNode[]
+	>([]);
 	const [componentKeyCounter, setComponentKeyCounter] = useState(0);
 
 	// Helper function to add components to the chat queue with stable keys
@@ -113,10 +119,7 @@ export function useAppState() {
 			}
 
 			// Add to queued components
-			setQueuedChatComponents(prevQueued => [
-				...prevQueued,
-				componentWithKey,
-			]);
+			setQueuedChatComponents(prevQueued => [...prevQueued, componentWithKey]);
 		},
 		[componentKeyCounter],
 	);
@@ -213,7 +216,7 @@ export function useAppState() {
 		userProfile,
 		integrations,
 		mcpStatus,
-		isThinking,
+		isConversationComplete,
 		isCancelling,
 		abortController,
 		isModelSelectionMode,
@@ -254,7 +257,7 @@ export function useAppState() {
 		setUserProfile,
 		setIntegrations,
 		setMcpStatus,
-		setIsThinking,
+		setIsConversationComplete,
 		setIsCancelling,
 		setAbortController,
 		setIsModelSelectionMode,

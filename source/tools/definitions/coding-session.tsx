@@ -5,7 +5,7 @@
  */
 
 import {tool, jsonSchema} from '@/types/core';
-import type {ToolDefinition} from '@/types/index';
+import type {CoreToolExport} from '@/types/index';
 import {
 	createSession,
 	saveSession,
@@ -37,7 +37,6 @@ const launchCodingSessionCoreTool = tool({
 		taskNumber?: number;
 		taskDescription: string;
 		agentName?: string;
-		contextPrompt?: string;
 		workingDirectory: string;
 		useWorktree?: boolean;
 	}>({
@@ -56,10 +55,6 @@ const launchCodingSessionCoreTool = tool({
 				description:
 					'Name of coding agent to use (claude-code, cursor, aider, codex). If not specified, uses default from config.',
 			},
-			contextPrompt: {
-				type: 'string',
-				description: 'Additional context or system prompt to pass to the agent',
-			},
 			workingDirectory: {
 				type: 'string',
 				description:
@@ -73,13 +68,17 @@ const launchCodingSessionCoreTool = tool({
 		},
 		required: ['taskDescription', 'workingDirectory'],
 	}),
+	// High risk: bash commands always require approval in all modes
+	needsApproval: true,
+	execute: async (args, _options) => {
+		return await executeLaunchCodingSession(args);
+	},
 });
 
 const executeLaunchCodingSession = async (args: {
 	taskNumber?: number;
 	taskDescription: string;
 	agentName?: string;
-	contextPrompt?: string;
 	workingDirectory: string;
 	useWorktree?: boolean;
 }): Promise<string> => {
@@ -124,7 +123,6 @@ const executeLaunchCodingSession = async (args: {
 		args.taskNumber,
 		args.taskDescription,
 		args.workingDirectory,
-		args.contextPrompt ?? `Task: ${args.taskDescription}`,
 		useWorktree,
 	);
 
@@ -132,7 +130,7 @@ const executeLaunchCodingSession = async (args: {
 	let taskDescriptionWithContext = args.taskDescription;
 
 	// Build context prompt
-	let contextPrompt = args.contextPrompt ?? '';
+	let contextPrompt = '';
 	if (useWorktree && session.worktreePath) {
 		const worktreeNote =
 			'\n\nIMPORTANT: You are working in a git worktree. You need to commit the changes before finishing.';
@@ -176,7 +174,6 @@ const launchCodingSessionFormatter = async (
 		taskNumber?: number;
 		taskDescription: string;
 		agentName?: string;
-		contextPrompt?: string;
 		workingDirectory: string;
 		useWorktree?: boolean;
 	},
@@ -202,10 +199,9 @@ const launchCodingSessionFormatter = async (
 	return lines.join('\n');
 };
 
-export const launchCodingSessionTool: ToolDefinition = {
+export const launchCodingSessionTool: CoreToolExport = {
 	name: 'launch_coding_session',
 	tool: launchCodingSessionCoreTool,
-	handler: executeLaunchCodingSession,
 	formatter: launchCodingSessionFormatter,
 };
 
@@ -225,6 +221,10 @@ const listCodingSessionsCoreTool = tool({
 			},
 		},
 	}),
+	needsApproval: false,
+	execute: async (args, _options) => {
+		return await executeListCodingSessions(args);
+	},
 });
 
 const executeListCodingSessions = async (args: {
@@ -269,10 +269,9 @@ const listCodingSessionsFormatter = async (
 	return lines.join('\n');
 };
 
-export const listCodingSessionsTool: ToolDefinition = {
+export const listCodingSessionsTool: CoreToolExport = {
 	name: 'list_coding_sessions',
 	tool: listCodingSessionsCoreTool,
-	handler: executeListCodingSessions,
 	formatter: listCodingSessionsFormatter,
 };
 
@@ -294,6 +293,10 @@ const closeCodingSessionCoreTool = tool({
 		},
 		required: ['identifier'],
 	}),
+	needsApproval: true,
+	execute: async (args, _options) => {
+		return await executeCloseCodingSession(args);
+	},
 });
 
 const executeCloseCodingSession = async (args: {
@@ -339,10 +342,9 @@ const closeCodingSessionFormatter = async (
 	return lines.join('\n');
 };
 
-export const closeCodingSessionTool: ToolDefinition = {
+export const closeCodingSessionTool: CoreToolExport = {
 	name: 'close_coding_session',
 	tool: closeCodingSessionCoreTool,
-	handler: executeCloseCodingSession,
 	formatter: closeCodingSessionFormatter,
 };
 
@@ -363,6 +365,10 @@ const deleteCodingSessionCoreTool = tool({
 		},
 		required: ['identifier'],
 	}),
+	needsApproval: true,
+	execute: async (args, _options) => {
+		return await executeDeleteCodingSession(args);
+	},
 });
 
 const executeDeleteCodingSession = async (args: {
@@ -416,10 +422,9 @@ const deleteCodingSessionFormatter = async (
 	return lines.join('\n');
 };
 
-export const deleteCodingSessionTool: ToolDefinition = {
+export const deleteCodingSessionTool: CoreToolExport = {
 	name: 'delete_coding_session',
 	tool: deleteCodingSessionCoreTool,
-	handler: executeDeleteCodingSession,
 	formatter: deleteCodingSessionFormatter,
 };
 
@@ -432,6 +437,10 @@ const clearCodingSessionsCoreTool = tool({
 		type: 'object',
 		properties: {},
 	}),
+	needsApproval: true,
+	execute: async (_args, _options) => {
+		return await executeClearCodingSessions();
+	},
 });
 
 const executeClearCodingSessions = async (): Promise<string> => {
@@ -495,9 +504,8 @@ const clearCodingSessionsFormatter = async (
 	return lines.join('\n');
 };
 
-export const clearCodingSessionsTool: ToolDefinition = {
+export const clearCodingSessionsTool: CoreToolExport = {
 	name: 'clear_coding_sessions',
 	tool: clearCodingSessionsCoreTool,
-	handler: executeClearCodingSessions,
 	formatter: clearCodingSessionsFormatter,
 };

@@ -101,44 +101,6 @@ export interface ToolEntry {
 	validator?: ToolValidator; // For validation
 }
 
-/**
- * Core's extended tool definition
- *
- * Uses AI SDK's native CoreTool with Core-specific metadata:
- * - name: Tool name (metadata for registry and lookup)
- * - tool: Native AI SDK CoreTool (using tool() and jsonSchema()) WITHOUT execute function
- * - handler: Manual execution function called after user confirmation (human-in-the-loop)
- * - formatter: React component for rich UI display in terminal
- * - validator: Optional pre-execution validation
- * - requiresConfirmation: Whether to show confirmation UI (default: true)
- *
- * Note: We keep 'name' as metadata since AI SDK's Tool type doesn't expose it.
- */
-export interface ToolDefinition {
-	// Tool name for registry and lookup
-	name: string;
-	// Native AI SDK tool (without execute to prevent auto-execution)
-	tool: AISDKCoreTool;
-	// Manual execution handler (called after user confirmation)
-	handler: ToolHandler;
-	formatter?: (
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Tool arguments are dynamically typed
-		args: any,
-		result?: string,
-	) =>
-		| string
-		| Promise<string>
-		| React.ReactElement
-		| Promise<React.ReactElement>;
-	requiresConfirmation?: boolean;
-	validator?: (
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Tool arguments are dynamically typed
-		args: any,
-	) => Promise<{valid: true} | {valid: false; error: string}>;
-	// Use def.tool.name instead of def.config.function.name
-	config?: Tool;
-}
-
 interface LLMMessage {
 	role: 'assistant';
 	content: string;
@@ -154,6 +116,7 @@ export interface LLMChatResponse {
 export interface StreamCallbacks {
 	onToken?: (token: string) => void;
 	onToolCall?: (toolCall: ToolCall) => void;
+	onToolExecuted?: (toolCall: ToolCall, result: string) => void;
 	onFinish?: () => void;
 }
 
@@ -163,11 +126,6 @@ export interface LLMClient {
 	getContextSize(): number;
 	getAvailableModels(): Promise<string[]>;
 	chat(
-		messages: Message[],
-		tools: Record<string, AISDKCoreTool>,
-		signal?: AbortSignal,
-	): Promise<LLMChatResponse>;
-	chatStream?(
 		messages: Message[],
 		tools: Record<string, AISDKCoreTool>,
 		callbacks: StreamCallbacks,
@@ -182,3 +140,20 @@ export const DEVELOPMENT_MODE_LABELS: Record<DevelopmentMode, string> = {
 	normal: '▶ normal mode on',
 	'auto-accept': '⏵⏵ auto-accept mode on',
 };
+
+/**
+ * This is what individual tool files export (e.g., read-file.tsx, execute-bash.tsx).
+ * The handler is extracted from tool.execute() in tools/index.ts to avoid duplication.
+ *
+ * Structure:
+ * - name: Tool name as const for type safety
+ * - tool: Native AI SDK v6 CoreTool with execute() function
+ * - formatter: Optional React component for rich CLI UI display
+ * - validator: Optional pre-execution validation function
+ */
+export interface CoreToolExport {
+	name: string;
+	tool: AISDKCoreTool; // AI SDK v6 tool with execute()
+	formatter?: ToolFormatter; // For UI display
+	validator?: ToolValidator; // For pre-execution validation
+}

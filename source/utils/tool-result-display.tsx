@@ -61,7 +61,7 @@ export async function displayToolResult(
 							key={`tool-result-${
 								result.tool_call_id
 							}-${componentKeyCounter}-${Date.now()}`}
-							title={`⚒ ${result.name}`}
+							title={`● ${result.name}`}
 							message={String(formattedResult)}
 							hideBox={true}
 						/>,
@@ -72,7 +72,7 @@ export async function displayToolResult(
 				addToChatQueue(
 					<ToolMessage
 						key={`tool-result-${result.tool_call_id}-${componentKeyCounter}`}
-						title={`⚒ ${result.name}`}
+						title={`● ${result.name}`}
 						message={result.content}
 						hideBox={true}
 					/>,
@@ -83,7 +83,7 @@ export async function displayToolResult(
 			addToChatQueue(
 				<ToolMessage
 					key={`tool-result-${result.tool_call_id}-${componentKeyCounter}`}
-					title={`⚒ ${result.name}: ${JSON.stringify(
+					title={`● ${result.name}: ${JSON.stringify(
 						toolCall.function.arguments,
 					)}`}
 					message={result.content}

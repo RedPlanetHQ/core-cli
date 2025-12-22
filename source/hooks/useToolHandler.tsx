@@ -170,17 +170,6 @@ export function useToolHandler({
 		// Check if this is an MCP tool and show appropriate messaging
 		const toolManager = getToolManager();
 		if (toolManager) {
-			const mcpInfo = toolManager.getMCPToolInfo(currentTool.function.name);
-			if (mcpInfo.isMCPTool) {
-				addToChatQueue(
-					<InfoMessage
-						key={`mcp-tool-executing-${componentKeyCounter}-${Date.now()}`}
-						message={`Executing MCP tool "${currentTool.function.name}" from server "${mcpInfo.serverName}"`}
-						hideBox={true}
-					/>,
-				);
-			}
-
 			// Run validator if available
 			const validator = toolManager.getToolValidator(currentTool.function.name);
 

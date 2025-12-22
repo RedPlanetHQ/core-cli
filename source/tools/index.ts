@@ -1,5 +1,5 @@
 import React from 'react';
-import type {ToolHandler, ToolDefinition, AISDKCoreTool} from '@/types/index';
+import type {ToolHandler, CoreToolExport, AISDKCoreTool} from '@/types/index';
 import {
 	newTaskTool,
 	updateTaskTool,
@@ -16,7 +16,7 @@ import {
 	clearCodingSessionsTool,
 } from './definitions/coding-session';
 
-export const toolDefinitions: ToolDefinition[] = [
+export const toolDefinitions: CoreToolExport[] = [
 	newTaskTool,
 	updateTaskTool,
 	deleteTaskTool,
@@ -31,8 +31,22 @@ export const toolDefinitions: ToolDefinition[] = [
 ];
 
 // Export handlers for manual execution (human-in-the-loop)
+// These are extracted from the AI SDK tools' execute functions
 export const toolRegistry: Record<string, ToolHandler> = Object.fromEntries(
-	toolDefinitions.map(def => [def.name, def.handler]),
+	toolDefinitions.map(t => [
+		t.name,
+		// Extract the execute function from the AI SDK tool
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		async (args: any) => {
+			// Call the tool's execute function with a dummy options object
+			// The actual options will be provided by AI SDK during automatic execution
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+			return await (t.tool as any).execute(args, {
+				toolCallId: 'manual',
+				messages: [],
+			});
+		},
+	]),
 );
 
 // Native AI SDK tools registry (for passing directly to AI SDK)

@@ -309,6 +309,7 @@ export default function UserInput({
 		selectedRoutineIndex,
 		isRoutineMode,
 		setInputState,
+		onStatusBarRefresh,
 	]);
 
 	// Handle escape key logic

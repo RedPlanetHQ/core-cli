@@ -2,8 +2,9 @@ import {spawn} from 'node:child_process';
 import {highlight} from 'cli-highlight';
 import React from 'react';
 import {Text, Box} from 'ink';
-import type {ToolDefinition} from '@/types/index';
+
 import {tool, jsonSchema} from '@/types/core';
+import type {CoreToolExport} from '@/types/core';
 import {ThemeContext} from '@/hooks/useTheme';
 import ToolMessage from '@/components/tool-message';
 
@@ -54,7 +55,6 @@ ${stdout}`;
 	});
 };
 
-// AI SDK tool definition
 const executeBashCoreTool = tool({
 	description:
 		'Execute a bash command and return the output (use for running commands)',
@@ -68,7 +68,11 @@ const executeBashCoreTool = tool({
 		},
 		required: ['command'],
 	}),
-	// NO execute function - prevents AI SDK auto-execution
+	// High risk: bash commands always require approval in all modes
+	needsApproval: true,
+	execute: async (args, _options) => {
+		return await executeExecuteBash(args);
+	},
 });
 
 // Create a component that will re-render when theme changes
@@ -100,19 +104,17 @@ const ExecuteBashFormatter = React.memo(
 
 		const messageContent = (
 			<Box flexDirection="column">
-				<Text color={colors.white}>⚒ execute_bash</Text>
+				<Text color={colors.tool}>● execute_bash</Text>
 
 				<Box>
-					<Text color={colors.white}>Command: </Text>
-					<Text color={colors.white}>{command}</Text>
+					<Text color={colors.secondary}>Command: </Text>
+					<Text color={colors.primary}>{command}</Text>
 				</Box>
 
 				{result && (
 					<Box>
-						<Text color={colors.white} dimColor>
-							Output:{' '}
-						</Text>
-						<Text color={colors.white} dimColor>
+						<Text color={colors.secondary}>Output: </Text>
+						<Text color={colors.white}>
 							{outputSize} characters (~{estimatedTokens} tokens sent to LLM)
 						</Text>
 					</Box>
@@ -124,14 +126,14 @@ const ExecuteBashFormatter = React.memo(
 	},
 );
 
-const formatter = (
+const executeBashFormatter = (
 	args: {command: string},
 	result?: string,
 ): React.ReactElement => {
 	return <ExecuteBashFormatter args={args} result={result} />;
 };
 
-const validator = (args: {
+const executeBashValidator = (args: {
 	command: string;
 }): Promise<{valid: true} | {valid: false; error: string}> => {
 	const command = args.command?.trim();
@@ -140,7 +142,7 @@ const validator = (args: {
 	if (!command) {
 		return Promise.resolve({
 			valid: false,
-			error: '⚒ Command cannot be empty',
+			error: '● Command cannot be empty',
 		});
 	}
 
@@ -158,7 +160,7 @@ const validator = (args: {
 		if (pattern.test(command)) {
 			return Promise.resolve({
 				valid: false,
-				error: `⚒ Command contains potentially destructive operation: "${command}". This command is blocked for safety.`,
+				error: `● Command contains potentially destructive operation: "${command}". This command is blocked for safety.`,
 			});
 		}
 	}
@@ -166,11 +168,9 @@ const validator = (args: {
 	return Promise.resolve({valid: true});
 };
 
-// Nanocoder tool definition with AI SDK core tool + custom extensions
-export const executeBashTool: ToolDefinition = {
-	name: 'execute_bash',
-	tool: executeBashCoreTool, // Native AI SDK tool (no execute)
-	handler: executeExecuteBash,
-	formatter,
-	validator,
+export const executeBashTool: CoreToolExport = {
+	name: 'execute_bash' as const,
+	tool: executeBashCoreTool,
+	formatter: executeBashFormatter,
+	validator: executeBashValidator,
 };

@@ -51,11 +51,11 @@ export function AssistantNameStep({
 			);
 		} else if (key.return) {
 			// Check if Custom option is selected
-			if (ASSISTANT_NAMES[selectedIndex]!.name === 'Custom') {
+			if (ASSISTANT_NAMES[selectedIndex].name === 'Custom') {
 				setIsCustomInput(true);
 			} else {
 				// Submit selection
-				onComplete(ASSISTANT_NAMES[selectedIndex]!.name);
+				onComplete(ASSISTANT_NAMES[selectedIndex].name);
 			}
 		} else if (key.escape || (key.tab && key.shift)) {
 			// Go back

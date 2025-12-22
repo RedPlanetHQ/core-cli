@@ -9,11 +9,13 @@ type ClientTransport =
 	| WebSocketClientTransport
 	| StreamableHTTPClientTransport;
 import type {Tool, ToolParameterSchema, AISDKCoreTool} from '@/types/index';
-import {tool, jsonSchema} from '@/types/index';
+import {jsonSchema} from '@/types/index';
 import {logInfo, logError} from '@/utils/message-queue';
 import {TransportFactory} from './transport-factory.js';
 
 import type {MCPServer, MCPTool, MCPInitResult} from '@/types/index';
+import {getCurrentMode} from '@/context/mode-context.js';
+import {dynamicTool} from 'ai';
 
 export class MCPClient {
 	private clients: Map<string, Client> = new Map();
@@ -176,13 +178,27 @@ export class MCPClient {
 				// Convert MCP tool to AI SDK's CoreTool format
 				// Use the input schema directly - it should already be JSON Schema compatible
 				// MCP schemas are already in JSON Schema format, cast to unknown first for type safety
-				const coreTool = tool({
+				const toolName = mcpTool.name;
+				const coreTool = dynamicTool({
 					description: mcpTool.description
 						? `[MCP:${serverName}] ${mcpTool.description}`
 						: `MCP tool from ${serverName}`,
-					inputSchema: jsonSchema(
+					inputSchema: jsonSchema<Record<string, unknown>>(
 						(mcpTool.inputSchema as unknown) || {type: 'object'},
 					),
+					// Medium risk: MCP tools require approval except in auto-accept mode
+					needsApproval: () => {
+						const mode = getCurrentMode();
+						return mode !== 'auto-accept'; // true in normal/plan, false in auto-accept
+					},
+					// v6 execute function - calls MCP server (arrow function preserves 'this')
+					execute: async (input, _options) => {
+						// dynamicTool passes 'input' as unknown, validate at runtime
+						return await this.callTool(
+							toolName,
+							input as Record<string, unknown>,
+						);
+					},
 					// No execute function - human-in-the-loop pattern
 				});
 

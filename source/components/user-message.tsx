@@ -46,29 +46,24 @@ export default memo(function UserMessage({message}: UserMessageProps) {
 
 	return (
 		<Box flexDirection="column" marginBottom={1}>
-			<Box>
-				<Text color={colors.secondary} bold>
-					You:
-				</Text>
-			</Box>
-			<Box flexDirection="column">
-				{lines.map((line, lineIndex) => {
-					const segments = parseLineWithPlaceholders(line);
-					return (
-						<Text key={lineIndex}>
-							{segments.map((segment, segIndex) => (
-								<Text
-									key={segIndex}
-									color={segment.isPlaceholder ? colors.info : colors.white}
-									bold={segment.isPlaceholder}
-								>
-									{segment.text}
-								</Text>
-							))}
-						</Text>
-					);
-				})}
-			</Box>
+			{lines.map((line, lineIndex) => {
+				const segments = parseLineWithPlaceholders(line);
+				return (
+					<Text key={lineIndex}>
+						{segments.map((segment, segIndex) => (
+							<Text
+								key={segIndex}
+								inverse
+								bold={segment.isPlaceholder}
+								color={segment.isPlaceholder ? colors.info : colors.white}
+							>
+								{lineIndex === 0 && '> '}
+								{segment.text}
+							</Text>
+						))}
+					</Text>
+				);
+			})}
 		</Box>
 	);
 });
