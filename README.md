@@ -6,6 +6,9 @@
 
 A terminal-first task manager powered by AI, with persistent memory across sessions. Built on [CORE](https://github.com/RedPlanetHQ/core) - so it actually remembers your projects, preferences, and past decisions.
 
+![core-cli-intro](https://github.com/user-attachments/assets/34033c0d-5d30-4897-89c1-3a13e46845b1)
+
+
 
 ## The Problem
 
@@ -36,6 +39,8 @@ Core CLI changes that. One unified task hub. All your integrations. Memory that 
 "What's blocking me this week?"
 ```
 
+![Sync-Core-cli](https://github.com/user-attachments/assets/221103aa-d6d5-4dc8-afc1-90ca4e1d7a8f)
+
 ### Sync with Your Task Assistant
 
 ```bash
@@ -47,6 +52,8 @@ Like a morning standup with your AI assistant. It:
 2. Scans for new work - If something popped up from recent activity in Github, Linear, Slack, Calendar, Gmail (bug assigned, PR review requested, Slack mention, new email), it searches for relevant context
 3. Reviews your task list - Analyzes your current tasks for any updates or priority changes
 4. Tells you what to focus on - Summarizes what's happening and recommends what needs your attention now
+
+
 
 
 ### Delegate Tasks to Coding Agents
@@ -209,6 +216,22 @@ You can set your preferred coding agent in the CLI:
 "Set my default coding agent to Claude Code"
 ```
 
+### Delegating Tasks with Specific Agents
+
+You can specify which coding agent to use for any task, overriding your default:
+```
+# Specify agent when delegating
+"Implement task 5 using Cursor"
+"Use Aider to fix task 3"
+"Launch Claude Code for task 7"
+```
+
+This is useful when:
+- Different tasks suit different agents
+- You want to test agents side-by-side
+- A specific agent has features you need for this task
+
+
 ### Example Workflow
 
 Here's a complete example of delegating tasks:
@@ -220,8 +243,12 @@ core-cli
 # 2. View your tasks
 /tasks
 
-# 3. Delegate a task to Claude Code
+# 3a. Delegate to your default agent
 "Implement task 5"
+
+# 3b. Delegate to a specific agent
+"Implement task 5 using Cursor"
+"Use Aider for task 5"
 
 # Output:
 # ⚡ launch_coding_session
