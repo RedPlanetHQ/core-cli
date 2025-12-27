@@ -8,7 +8,9 @@ A terminal-first task manager powered by AI, with persistent memory across sessi
 
 ![core-cli-intro](https://github.com/user-attachments/assets/34033c0d-5d30-4897-89c1-3a13e46845b1)
 
-
+**Prerequisites**
+- LLM API Key
+- CORE account (sign up at [app.getcore.me](https://app.getcore.me) )
 
 ## The Problem
 
