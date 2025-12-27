@@ -95,7 +95,7 @@ core-cli
 On first run, you'll:
 
 1. Connect your AI provider (OpenAI, Anthropic)
-2. Link your CORE account (for memory + integrations)
+2. Link your CORE account (for memory + integrations): Get your API key from [app.getcore.me](https://app.getcore.me) → Settings → API Key, then name it as core-cli and add it to terminal.
 3. Optionally connect GitHub, Linear, Slack
 
 That's it. Start talking to your tasks.
