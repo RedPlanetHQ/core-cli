@@ -78,6 +78,8 @@ Launches your preferred coding agent (Claude Code, Cursor, Aider) in an isolated
 
 Work on multiple tasks in parallel. Switch between them freely.
 
+![coding-agent-delegation](https://github.com/user-attachments/assets/00b18227-de70-48eb-a20e-fec9431de29b)
+
 ## Quick Start
 
 ```bash
