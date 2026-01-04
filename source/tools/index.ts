@@ -15,6 +15,8 @@ import {
 	deleteCodingSessionTool,
 	clearCodingSessionsTool,
 } from './definitions/coding-session';
+import {exploreSubagentTool} from './definitions/explore-subagent';
+import {integrationExecutionSubagentTool} from './definitions/integration-execution-subagent';
 
 export const toolDefinitions: CoreToolExport[] = [
 	newTaskTool,
@@ -28,6 +30,8 @@ export const toolDefinitions: CoreToolExport[] = [
 	closeCodingSessionTool,
 	deleteCodingSessionTool,
 	clearCodingSessionsTool,
+	exploreSubagentTool,
+	integrationExecutionSubagentTool,
 ];
 
 // Export handlers for manual execution (human-in-the-loop)
@@ -37,13 +41,13 @@ export const toolRegistry: Record<string, ToolHandler> = Object.fromEntries(
 		t.name,
 		// Extract the execute function from the AI SDK tool
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		async (args: any) => {
-			// Call the tool's execute function with a dummy options object
-			// The actual options will be provided by AI SDK during automatic execution
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+		async (args: any, options?: any) => {
+			// Call the tool's execute function with options
+			// Options may contain onProgress callback for progressive updates
 			return await (t.tool as any).execute(args, {
 				toolCallId: 'manual',
 				messages: [],
+				...options, // Include onProgress if provided
 			});
 		},
 	]),
@@ -90,5 +94,26 @@ export const toolValidators: Record<
 				throw new Error(`Validator is undefined for tool ${def.name}`);
 			}
 			return [def.name, validator];
+		}),
+);
+
+// Export progress formatter registry for progressive UI updates
+export const progressFormatters: Record<
+	string,
+	(
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		args: any,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		updates: any[],
+	) => React.ReactElement | Promise<React.ReactElement>
+> = Object.fromEntries(
+	toolDefinitions
+		.filter(def => def.progressFormatter)
+		.map(def => {
+			const progressFormatter = def.progressFormatter;
+			if (!progressFormatter) {
+				throw new Error(`ProgressFormatter is undefined for tool ${def.name}`);
+			}
+			return [def.name, progressFormatter];
 		}),
 );

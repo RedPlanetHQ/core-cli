@@ -12,9 +12,11 @@ import {useTerminalWidth} from '@/hooks/useTerminalWidth';
 import {getToolManager} from '@/message-handler';
 import {parseToolArguments} from '@/utils/tool-args-parser';
 import {formatError} from '@/utils/error-formatter';
+import type {ApprovalMetadata} from '@/utils/approval-registry';
 
 interface ToolConfirmationProps {
 	toolCall: ToolCall;
+	metadata?: ApprovalMetadata;
 	onConfirm: (confirmed: boolean) => void;
 	onCancel: () => void;
 }
@@ -26,6 +28,7 @@ interface ConfirmationOption {
 
 export default function ToolConfirmation({
 	toolCall,
+	metadata,
 	onConfirm,
 	onCancel,
 }: ToolConfirmationProps) {
@@ -45,6 +48,23 @@ export default function ToolConfirmation({
 	const toolManager = getToolManager();
 	const mcpInfo = toolManager?.getMCPToolInfo(toolCall.function.name) || {
 		isMCPTool: false,
+	};
+
+	// Build the chain display if this is from a subagent
+	const getSourceDisplay = (): string => {
+		if (!metadata || metadata.source === 'main') {
+			return '';
+		}
+
+		if (metadata.chain && metadata.chain.length > 0) {
+			return ` (from ${metadata.chain.join(' → ')})`;
+		}
+
+		if (metadata.subagentType) {
+			return ` (from ${metadata.subagentType})`;
+		}
+
+		return ' (from subagent)';
 	};
 
 	// Load formatter preview
@@ -174,7 +194,7 @@ export default function ToolConfirmation({
 											mcpInfo.isMCPTool
 												? `MCP tool "${toolCall.function.name}" from server "${mcpInfo.serverName}"`
 												: `tool "${toolCall.function.name}"`
-									  }?`}
+									  }${getSourceDisplay()}?`}
 							</Text>
 						</Box>
 

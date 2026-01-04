@@ -26,9 +26,8 @@ import CancellingIndicator from './components/cancelling-indicator';
 import ThemeSelector from './components/theme-selector';
 import {ConfigWizard} from './wizard/config-wizard';
 import ToolConfirmation from './components/tool-confirmation';
-import ToolExecutionIndicator from './components/tool-execution-indicator';
 import BashExecutionIndicator from './components/bash-execution-indicator';
-import {useToolHandler} from './hooks/useToolHandler';
+import ProgressIndicator from './components/progress-indicator';
 import ModelSelector from './components/model-selector';
 import ProviderSelector from './components/provider-selector';
 import CodingAgentSelector from './components/coding-agent-selector';
@@ -36,6 +35,7 @@ import NameSelector from './components/name-selector';
 import {getAssistantName} from './config/preferences';
 import {appConfig} from './config/index';
 import {setCurrentMode as setCurrentModeContext} from '@/context/mode-context';
+import {approvalRegistry} from './utils/approval-registry';
 
 export function shouldRenderWelcome(nonInteractiveMode?: boolean) {
 	return !nonInteractiveMode;
@@ -198,48 +198,12 @@ export default function App() {
 		userProfile: appState.userProfile,
 		integrations: appState.integrations,
 		isIncognitoMode: appState.isIncognitoMode,
-		onStartToolConfirmationFlow: (
-			toolCalls,
-			updatedMessages,
-			assistantMsg,
-			systemMessage,
-		) => {
-			appState.setPendingToolCalls(toolCalls);
-			appState.setCurrentToolIndex(0);
-			appState.setCompletedToolResults([]);
-			appState.setCurrentConversationContext({
-				updatedMessages,
-				assistantMsg,
-				systemMessage,
-			});
-			appState.setIsToolConfirmationMode(true);
-		},
+		setIsToolExecuting: appState.setIsToolExecuting,
+		setCurrentDirectTool: appState.setCurrentDirectTool,
 		onConversationComplete: () => {
 			// Signal that the conversation has completed
 			appState.setIsConversationComplete(true);
 		},
-	});
-
-	// Setup tool handler
-	const toolHandler = useToolHandler({
-		pendingToolCalls: appState.pendingToolCalls,
-		currentToolIndex: appState.currentToolIndex,
-		completedToolResults: appState.completedToolResults,
-		currentConversationContext: appState.currentConversationContext,
-		setPendingToolCalls: appState.setPendingToolCalls,
-		setCurrentToolIndex: appState.setCurrentToolIndex,
-		setCompletedToolResults: appState.setCompletedToolResults,
-		setCurrentConversationContext: appState.setCurrentConversationContext,
-		setIsToolConfirmationMode: appState.setIsToolConfirmationMode,
-		setIsToolExecuting: appState.setIsToolExecuting,
-		setMessages: appState.updateMessages,
-		addToChatQueue: appState.addToChatQueue,
-		componentKeyCounter: appState.componentKeyCounter,
-		resetToolConfirmationState: appState.resetToolConfirmationState,
-		onProcessAssistantResponse: chatHandler.processAssistantResponse,
-		client: appState.client,
-		currentProvider: appState.currentProvider,
-		setDevelopmentMode: appState.setDevelopmentMode,
 	});
 
 	// Memoize handlers to prevent unnecessary re-renders
@@ -431,23 +395,50 @@ export default function App() {
 									onCancel={modeHandlers.handleConfigWizardCancel}
 								/>
 							) : appState.isToolConfirmationMode &&
-							  appState.pendingToolCalls[appState.currentToolIndex] ? (
+							  appState.pendingApproval ? (
 								<ToolConfirmation
-									toolCall={
-										appState.pendingToolCalls[appState.currentToolIndex]
-									}
-									onConfirm={toolHandler.handleToolConfirmation}
-									onCancel={toolHandler.handleToolConfirmationCancel}
+									toolCall={appState.pendingApproval.toolCall}
+									metadata={appState.pendingApproval.metadata}
+									onConfirm={(approved: boolean) => {
+										if (appState.pendingApproval) {
+											approvalRegistry.resolve(
+												appState.pendingApproval.toolCall.id,
+												approved,
+											);
+											appState.setIsToolConfirmationMode(false);
+										}
+									}}
+									onCancel={() => {
+										if (appState.pendingApproval) {
+											approvalRegistry.resolve(
+												appState.pendingApproval.toolCall.id,
+												false,
+											);
+											appState.setIsToolConfirmationMode(false);
+										}
+									}}
 								/>
-							) : appState.isToolExecuting &&
-							  appState.pendingToolCalls[appState.currentToolIndex] ? (
-								<ToolExecutionIndicator
+							) : appState.isToolExecuting ? (
+								<ProgressIndicator
 									toolName={
-										appState.pendingToolCalls[appState.currentToolIndex]
-											.function.name
+										(
+											appState.pendingToolCalls[appState.currentToolIndex] ||
+											appState.currentDirectTool
+										)?.function.name
 									}
-									currentIndex={appState.currentToolIndex}
-									totalTools={appState.pendingToolCalls.length}
+									toolArgs={
+										(
+											appState.pendingToolCalls[appState.currentToolIndex] ||
+											appState.currentDirectTool
+										)?.function.arguments
+									}
+									toolManager={appState.toolManager}
+									toolCallId={
+										(
+											appState.pendingToolCalls[appState.currentToolIndex] ||
+											appState.currentDirectTool
+										)?.id
+									}
 								/>
 							) : appState.isBashExecuting ? (
 								<BashExecutionIndicator command={appState.currentBashCommand} />

@@ -1,9 +1,18 @@
-import {LLMClient, Message, ToolCall, ToolResult} from '@/types/core';
+import {
+	LLMClient,
+	Message,
+	ToolCall,
+	ToolResult,
+	AISDKCoreTool,
+	ToolProgressUpdate,
+} from '@/types/core';
 import {ToolManager} from '@/tools/tool-manager';
 import {processPromptTemplate} from '@/utils/prompt-processor';
 import {parseToolCalls} from '@/tool-calling/index';
 import {ConversationStateManager} from '@/app/utils/conversationState';
 import {promptHistory} from '@/prompt-history';
+import {progressRegistry} from '@/utils/progress-registry';
+import {processToolUse} from '@/message-handler';
 
 import {displayToolResult} from '@/utils/tool-result-display';
 import {parseToolArguments} from '@/utils/tool-args-parser';
@@ -16,6 +25,7 @@ import {appConfig} from '@/config/index';
 import {getCurrentSession} from '@/usage/tracker';
 import {getAssistantName} from '@/config/preferences';
 import {getRoutine} from '@/utils/routines';
+import {approvalRegistry} from '@/utils/approval-registry';
 
 // Normalize streaming content to prevent excessive blank lines during output
 const normalizeStreamingContent = (content: string): string =>
@@ -110,12 +120,8 @@ interface UseChatHandlerProps {
 	nonInteractiveMode?: boolean;
 
 	isIncognitoMode?: boolean;
-	onStartToolConfirmationFlow: (
-		toolCalls: ToolCall[],
-		updatedMessages: Message[],
-		assistantMsg: Message,
-		systemMessage: Message,
-	) => void;
+	setIsToolExecuting: (executing: boolean) => void;
+	setCurrentDirectTool: (toolCall: ToolCall | null) => void;
 	onConversationComplete?: () => void;
 }
 
@@ -135,7 +141,8 @@ export function useChatHandler({
 	userProfile,
 	integrations,
 	isIncognitoMode = false,
-	onStartToolConfirmationFlow,
+	setIsToolExecuting,
+	setCurrentDirectTool,
 	onConversationComplete,
 }: UseChatHandlerProps) {
 	// Conversation state manager for enhanced context
@@ -253,11 +260,77 @@ export function useChatHandler({
 			'memory_about_user',
 		];
 
-		const filteredTools = Object.fromEntries(
+		const filteredToolsBase = Object.fromEntries(
 			Object.entries(allTools).filter(
 				([name]) => !filteredToolNames.includes(name),
 			),
 		);
+
+		// Wrap execute functions to track tool execution state for tools with needsApproval: false
+		const filteredTools: Record<string, AISDKCoreTool> = {};
+		for (const [toolName, toolDef] of Object.entries(filteredToolsBase)) {
+			// Check if tool has needsApproval: false
+			const toolEntry = toolManager?.getToolEntry(toolName);
+			const needsApprovalProp = toolEntry?.tool
+				? (
+						toolEntry.tool as unknown as {
+							needsApproval?:
+								| boolean
+								| ((args: unknown) => boolean | Promise<boolean>);
+						}
+				  ).needsApproval
+				: undefined;
+
+			// Only wrap tools with needsApproval: false (direct execution)
+			const shouldWrap = needsApprovalProp === false;
+
+			if (shouldWrap && toolDef.execute) {
+				// Wrap the execute function
+				const originalExecute = toolDef.execute;
+				filteredTools[toolName] = {
+					...toolDef,
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					execute: async (args: any, options?: any) => {
+						// Create a ToolCall object to track which tool is executing
+						const toolCall: ToolCall = {
+							id: `temp_${Date.now()}_${Math.random()
+								.toString(36)
+								.substring(7)}`,
+							function: {
+								name: toolName,
+								arguments: args as Record<string, unknown>,
+							},
+						};
+
+						// Set executing state and current tool at the start
+						setIsToolExecuting(true);
+						setCurrentDirectTool(toolCall);
+
+						try {
+							// Create onProgress callback that reports to the progress registry
+							const onProgress = (update: ToolProgressUpdate) => {
+								progressRegistry.reportProgress(toolCall.id, update);
+							};
+
+							// Call original execute with progress callback
+							const result = await originalExecute(args, {
+								...options,
+								onProgress,
+								toolCallId: toolCall.id,
+							});
+							return result;
+						} finally {
+							// Always reset executing state when done
+							setIsToolExecuting(false);
+							setCurrentDirectTool(null);
+						}
+					},
+				};
+			} else {
+				// Don't wrap - use original
+				filteredTools[toolName] = toolDef;
+			}
+		}
 
 		try {
 			// Use streaming with callbacks
@@ -437,92 +510,12 @@ export function useChatHandler({
 
 			// Handle tool calls if present - this continues the loop
 			if (validToolCalls && validToolCalls.length > 0) {
-				// In Plan Mode, block file modification tools
-				if (developmentMode === 'plan') {
-					const fileModificationTools = [
-						'create_file',
-						'delete_lines',
-						'insert_lines',
-						'replace_lines',
-					];
-					const blockedTools = validToolCalls.filter(tc =>
-						fileModificationTools.includes(tc.function.name),
-					);
-
-					if (blockedTools.length > 0) {
-						// Create error results for blocked tools
-						const blockedToolErrors: ToolResult[] = blockedTools.map(
-							toolCall => ({
-								tool_call_id: toolCall.id,
-								role: 'tool' as const,
-								name: toolCall.function.name,
-								content: `⚠ Tool "${toolCall.function.name}" is not allowed in Plan Mode. File modification tools are restricted in this mode. Switch to Normal Mode or Auto-accept Mode to execute file modifications.`,
-							}),
-						);
-
-						// Display error messages
-						for (const error of blockedToolErrors) {
-							addToChatQueue(
-								<ErrorMessage
-									key={`plan-mode-blocked-${error.tool_call_id}-${Date.now()}`}
-									message={error.content}
-									hideBox={true}
-								/>,
-							);
-						}
-
-						// Continue conversation with error messages
-						const updatedMessagesWithError = [
-							...messages,
-							assistantMsg,
-							...toolResultsToMessages(blockedToolErrors),
-						];
-						setMessages(updatedMessagesWithError);
-
-						// Continue the main conversation loop with error messages as context
-						await processAssistantResponse(
-							systemMessage,
-							updatedMessagesWithError,
-						);
-						return;
-					}
-				}
-
-				// Separate tools that need confirmation vs those that don't
-				// Check tool's needsApproval property to determine if confirmation is needed
-				const toolsNeedingConfirmation: ToolCall[] = [];
-				const toolsToExecuteDirectly: ToolCall[] = [];
+				// Execute all tools (using approval registry for those needing confirmation)
+				const toolResults: ToolResult[] = [];
 
 				for (const toolCall of validToolCalls) {
-					// Check if tool has a validator
-					let validationFailed = false;
-
-					// XML validation errors are treated as validation failures
-					if (toolCall.function.name === '__xml_validation_error__') {
-						validationFailed = true;
-					} else if (toolManager) {
-						const validator = toolManager.getToolValidator(
-							toolCall.function.name,
-						);
-						if (validator) {
-							try {
-								const parsedArgs = parseToolArguments(
-									toolCall.function.arguments,
-								);
-
-								const validationResult = await validator(parsedArgs);
-								if (!validationResult.valid) {
-									validationFailed = true;
-								}
-							} catch {
-								// Validation threw an error - treat as validation failure
-								validationFailed = true;
-							}
-						}
-					}
-
-					// Check tool's needsApproval property from the tool definition
-					let toolNeedsApproval = true; // Default to requiring approval for safety
+					// Check if this tool needs approval
+					let toolNeedsApproval = true;
 					if (toolManager) {
 						const toolEntry = toolManager.getToolEntry(toolCall.function.name);
 						if (toolEntry?.tool) {
@@ -536,190 +529,206 @@ export function useChatHandler({
 							if (typeof needsApprovalProp === 'boolean') {
 								toolNeedsApproval = needsApprovalProp;
 							} else if (typeof needsApprovalProp === 'function') {
-								// Evaluate function - our tools use getCurrentMode() internally
-								// and don't actually need the args parameter
 								try {
 									const parsedArgs = parseToolArguments(
 										toolCall.function.arguments,
 									);
-									// Cast to any to handle AI SDK type signature mismatch
-									// Our tool implementations don't use the second parameter
 									toolNeedsApproval = await (
 										needsApprovalProp as (
 											args: unknown,
 										) => boolean | Promise<boolean>
 									)(parsedArgs);
 								} catch {
-									// If evaluation fails, require approval for safety
 									toolNeedsApproval = true;
 								}
 							}
 						}
 					}
 
-					// Execute directly if:
-					// 1. Validation failed (need to send error back to model)
-					// 2. Tool has needsApproval: false
-					// 3. In auto-accept mode (except bash which always needs approval)
+					// Check if it's bash tool (always needs approval even in auto-accept)
 					const isBashTool = toolCall.function.name === 'execute_bash';
-					if (
-						validationFailed ||
-						!toolNeedsApproval ||
-						(developmentMode === 'auto-accept' && !isBashTool)
-					) {
-						toolsToExecuteDirectly.push(toolCall);
-					} else {
-						toolsNeedingConfirmation.push(toolCall);
-					}
-				}
 
-				// Execute non-confirmation tools directly
-				if (toolsToExecuteDirectly.length > 0) {
-					// Import processToolUse here to avoid circular dependencies
-					const {processToolUse} = await import('@/message-handler');
-					const directResults: ToolResult[] = [];
-
-					for (const toolCall of toolsToExecuteDirectly) {
-						try {
-							// Run validator if available
-							const validator = toolManager?.getToolValidator(
-								toolCall.function.name,
-							);
-							if (validator) {
+					// Check if validation failed
+					let validationFailed = false;
+					if (toolCall.function.name === '__xml_validation_error__') {
+						validationFailed = true;
+					} else if (toolManager) {
+						const validator = toolManager.getToolValidator(
+							toolCall.function.name,
+						);
+						if (validator) {
+							try {
 								const parsedArgs = parseToolArguments(
 									toolCall.function.arguments,
 								);
-
 								const validationResult = await validator(parsedArgs);
 								if (!validationResult.valid) {
-									// Validation failed - create error result and skip execution
-									const errorResult: ToolResult = {
-										tool_call_id: toolCall.id,
-										role: 'tool' as const,
-										name: toolCall.function.name,
-										content: validationResult.error,
-									};
-									directResults.push(errorResult);
-
-									// Update conversation state with error
-									conversationStateManager.current.updateAfterToolExecution(
-										toolCall,
-										errorResult.content,
-									);
-
-									// Display the validation error to the user
-									addToChatQueue(
-										<ErrorMessage
-											key={`validation-error-${toolCall.id}-${Date.now()}`}
-											message={validationResult.error}
-											hideBox={true}
-										/>,
-									);
-
-									continue; // Skip to next tool
+									validationFailed = true;
 								}
+							} catch {
+								validationFailed = true;
 							}
+						}
+					}
 
-							const result = await processToolUse(toolCall);
-							directResults.push(result);
-
-							// Update conversation state with tool execution
-							conversationStateManager.current.updateAfterToolExecution(
-								toolCall,
-								result.content,
+					// Request approval if needed
+					if (
+						!validationFailed &&
+						toolNeedsApproval &&
+						!(developmentMode === 'auto-accept' && !isBashTool)
+					) {
+						// In non-interactive mode, exit when tool approval is required
+						if (nonInteractiveMode) {
+							const errorMsg = `Tool approval required for: ${toolCall.function.name}. Exiting non-interactive mode`;
+							addToChatQueue(
+								<ErrorMessage
+									key={`tool-approval-required-${Date.now()}`}
+									message={errorMsg}
+									hideBox={true}
+								/>,
 							);
+							const errorMessage: Message = {
+								role: 'assistant',
+								content: errorMsg,
+							};
+							setMessages([...messages, assistantMsg, errorMessage]);
+							if (onConversationComplete) {
+								onConversationComplete();
+							}
+							return;
+						}
 
-							// Display the tool result immediately
-							await displayToolResult(
-								toolCall,
-								result,
-								toolManager,
-								addToChatQueue,
-								componentKeyCounter,
-							);
+						// Request approval via registry
+
+						try {
+							const approved = await approvalRegistry.request(toolCall, {
+								source: 'main',
+								chain: ['main'],
+							});
+
+							if (!approved) {
+								// User pressed Escape - cancel entire flow and return to main
+								toolResults.push({
+									tool_call_id: toolCall.id,
+									role: 'tool' as const,
+									name: toolCall.function.name,
+									content: 'Tool execution cancelled by user',
+								});
+								break; // Break out of loop - don't process more tools
+							}
 						} catch (error) {
-							// Handle tool execution errors
-							const errorResult: ToolResult = {
+							// Approval was cancelled or errored
+							toolResults.push({
 								tool_call_id: toolCall.id,
 								role: 'tool' as const,
 								name: toolCall.function.name,
-								content: `Error: ${formatError(error)}`,
-							};
-							directResults.push(errorResult);
-
-							// Update conversation state with error
-							conversationStateManager.current.updateAfterToolExecution(
-								toolCall,
-								errorResult.content,
-							);
-
-							// Display the error result
-							await displayToolResult(
-								toolCall,
-								errorResult,
-								toolManager,
-								addToChatQueue,
-								componentKeyCounter,
-							);
+								content: `Tool execution cancelled: ${
+									error instanceof Error ? error.message : 'Unknown error'
+								}`,
+							});
+							break; // Break out of loop - don't process more tools
 						}
 					}
 
-					// If we have results, continue the conversation with them
-					if (directResults.length > 0) {
-						const updatedMessagesWithTools = [
-							...messages,
-							assistantMsg,
-							...toolResultsToMessages(directResults),
-						];
-						setMessages(updatedMessagesWithTools);
+					// Execute the tool
+					setIsToolExecuting(true);
+					setCurrentDirectTool(toolCall);
 
-						// Continue the main conversation loop with tool results as context
-						await processAssistantResponse(
-							systemMessage,
-							updatedMessagesWithTools,
+					try {
+						// Track tool execution with progress
+						const result = await processToolUse(toolCall, {
+							onProgress: (_update: ToolProgressUpdate) => {
+								// Progress updates are handled by ProgressIndicator
+							},
+							toolCallId: toolCall.id,
+						});
+
+						toolResults.push(result);
+
+						// Display the result
+						await displayToolResult(
+							toolCall,
+							result,
+							toolManager,
+							addToChatQueue,
+							componentKeyCounter,
 						);
-						return;
+					} catch (error) {
+						const errorResult: ToolResult = {
+							tool_call_id: toolCall.id,
+							role: 'tool' as const,
+							name: toolCall.function.name,
+							content: `Error: ${formatError(error)}`,
+						};
+						toolResults.push(errorResult);
+						await displayToolResult(
+							toolCall,
+							errorResult,
+							toolManager,
+							addToChatQueue,
+							componentKeyCounter,
+						);
+					} finally {
+						setIsToolExecuting(false);
+						setCurrentDirectTool(null);
 					}
 				}
 
-				// Start confirmation flow only for tools that need it
-				if (toolsNeedingConfirmation.length > 0) {
-					// In non-interactive mode, exit when tool approval is required
-					if (nonInteractiveMode) {
-						const toolNames = toolsNeedingConfirmation
-							.map(tc => tc.function.name)
-							.join(', ');
-						const errorMsg = `Tool approval required for: ${toolNames}. Exiting non-interactive mode`;
+				// Check if user cancelled any tool (pressed Escape)
+				const wasCancelled = toolResults.some(
+					result =>
+						result.content === 'Tool execution cancelled by user' ||
+						result.content?.startsWith('Tool execution cancelled:'),
+				);
 
-						// Add error message to UI
-						addToChatQueue(
-							<ErrorMessage
-								key={`tool-approval-required-${Date.now()}`}
-								message={errorMsg}
-								hideBox={true}
-							/>,
-						);
+				if (wasCancelled) {
+					// User pressed Escape - stop the conversation and return to main
+					// Add the assistant message and cancellation results to messages
+					const toolMessages = toolResults.map(result => ({
+						role: 'tool' as const,
+						content: result.content || '',
+						tool_call_id: result.tool_call_id,
+						name: result.name,
+					}));
 
-						// Add error to messages array so exit detection can find it
-						const errorMessage: Message = {
-							role: 'assistant',
-							content: errorMsg,
-						};
-						setMessages([...messages, assistantMsg, errorMessage]);
+					const shouldIncludeAssistantMsg =
+						assistantMsg.content.trim().length > 0;
+					const updatedMessagesWithTools = shouldIncludeAssistantMsg
+						? [...messages, assistantMsg, ...toolMessages]
+						: [...messages, ...toolMessages];
 
-						// Signal completion to trigger exit
-						if (onConversationComplete) {
-							onConversationComplete();
-						}
-						return;
+					setMessages(updatedMessagesWithTools);
+
+					// Don't continue the conversation - user wants to stop
+					if (onConversationComplete) {
+						onConversationComplete();
 					}
+					return;
+				}
 
-					onStartToolConfirmationFlow(
-						toolsNeedingConfirmation,
-						messages,
-						assistantMsg,
+				// Continue conversation with all tool results
+				if (toolResults.length > 0) {
+					const toolMessages = toolResults.map(result => ({
+						role: 'tool' as const,
+						content: result.content || '',
+						tool_call_id: result.tool_call_id,
+						name: result.name,
+					}));
+
+					const shouldIncludeAssistantMsg =
+						assistantMsg.content.trim().length > 0;
+					const updatedMessagesWithTools = shouldIncludeAssistantMsg
+						? [...messages, assistantMsg, ...toolMessages]
+						: [...messages, ...toolMessages];
+
+					setMessages(updatedMessagesWithTools);
+
+					// Continue the conversation loop
+					await processAssistantResponse(
 						systemMessage,
+						updatedMessagesWithTools,
 					);
+					return;
 				}
 			}
 

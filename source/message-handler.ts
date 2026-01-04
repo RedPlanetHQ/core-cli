@@ -1,4 +1,9 @@
-import type {ToolCall, ToolResult, ToolHandler} from '@/types/index';
+import type {
+	ToolCall,
+	ToolResult,
+	ToolHandler,
+	ToolExecutionOptions,
+} from '@/types/index';
 import type {ToolManager} from '@/tools/tool-manager';
 import {formatError} from '@/utils/error-formatter';
 import {parseToolArguments} from '@/utils/tool-args-parser';
@@ -24,7 +29,10 @@ export function getToolManager(): ToolManager | null {
 	return toolManagerGetter ? toolManagerGetter() : null;
 }
 
-export async function processToolUse(toolCall: ToolCall): Promise<ToolResult> {
+export async function processToolUse(
+	toolCall: ToolCall,
+	options?: ToolExecutionOptions,
+): Promise<ToolResult> {
 	// Handle XML validation errors by throwing (will be caught and returned as error ToolResult)
 	if (toolCall.function.name === '__xml_validation_error__') {
 		const args = toolCall.function.arguments as {error: string};
@@ -51,21 +59,19 @@ export async function processToolUse(toolCall: ToolCall): Promise<ToolResult> {
 
 		// Validate and auto-fix schema structure issues (e.g., flattened nested objects)
 		const toolManager = getToolManager();
-		// console.log('[DEBUG] Tool manager exists:', !!toolManager);
+
 		if (toolManager) {
 			const toolEntry = toolManager.getToolEntry(toolCall.function.name);
-			// console.log('[DEBUG] Tool entry for', toolCall.function.name, ':', !!toolEntry);
+
 			if (toolEntry?.tool) {
 				const schema = getToolSchema(toolEntry.tool);
-				// console.log('[DEBUG] Schema for', toolCall.function.name, ':', JSON.stringify(schema, null, 2));
-				// console.log('[DEBUG] Args before fix:', JSON.stringify(parsedArgs, null, 2));
 				if (schema) {
 					const validation = validateAndFixSchema(parsedArgs, schema);
-					// console.log('[DEBUG] Validation result:', validation);
+
 					if (validation.fixed) {
 						// Schema was auto-fixed, use the fixed version
 						parsedArgs = validation.fixed;
-						// console.log('[DEBUG] Args after fix:', JSON.stringify(parsedArgs, null, 2));
+
 						// Log the fix for debugging
 						console.warn(
 							`[Schema Auto-Fix] ${toolCall.function.name}:`,
@@ -76,7 +82,8 @@ export async function processToolUse(toolCall: ToolCall): Promise<ToolResult> {
 			}
 		}
 
-		const result = await handler(parsedArgs);
+		// Pass options to handler
+		const result = await handler(parsedArgs, options);
 		return {
 			tool_call_id: toolCall.id,
 			role: 'tool',

@@ -8,6 +8,7 @@ import type {UpdateInfo, ToolResult} from '@/types/index';
 import {createTokenizer} from '@/tokenization/index.js';
 import type {Tokenizer} from '@/types/tokenization.js';
 import React from 'react';
+import {approvalRegistry, type PendingApproval} from '@/utils/approval-registry';
 
 export interface ConversationContext {
 	updatedMessages: Message[];
@@ -73,6 +74,9 @@ export function useAppState() {
 	const [isBashExecuting, setIsBashExecuting] = useState<boolean>(false);
 	const [currentBashCommand, setCurrentBashCommand] = useState<string>('');
 
+	// Track current tool being executed (for tools that don't need approval)
+	const [currentDirectTool, setCurrentDirectTool] = useState<ToolCall | null>(null);
+
 	// Development mode state
 	const [developmentMode, setDevelopmentMode] =
 		useState<DevelopmentMode>('normal');
@@ -87,7 +91,7 @@ export function useAppState() {
 		setStatusBarRefreshTrigger(prev => prev + 1);
 	}, []);
 
-	// Tool confirmation state
+	// Tool confirmation state (legacy - being phased out in favor of approval registry)
 	const [pendingToolCalls, setPendingToolCalls] = useState<ToolCall[]>([]);
 	const [currentToolIndex, setCurrentToolIndex] = useState<number>(0);
 	const [completedToolResults, setCompletedToolResults] = useState<
@@ -95,6 +99,22 @@ export function useAppState() {
 	>([]);
 	const [currentConversationContext, setCurrentConversationContext] =
 		useState<ConversationContext | null>(null);
+
+	// Approval registry state (unified approval for main agent and subagents)
+	const [pendingApproval, setPendingApproval] =
+		useState<PendingApproval | null>(null);
+
+	// Register approval callback
+	useEffect(() => {
+		approvalRegistry.onApprovalNeeded((approval: PendingApproval) => {
+			setPendingApproval(approval);
+			setIsToolConfirmationMode(true);
+		});
+
+		return () => {
+			approvalRegistry.clearApprovalNeededCallback();
+		};
+	}, []);
 
 	// Chat queue for components - split into static (rendered) and queued (new)
 	const [staticChatComponents, setStaticChatComponents] = useState<
@@ -230,6 +250,7 @@ export function useAppState() {
 		isToolExecuting,
 		isBashExecuting,
 		currentBashCommand,
+		currentDirectTool,
 		developmentMode,
 		isIncognitoMode,
 		statusBarRefreshTrigger,
@@ -237,6 +258,7 @@ export function useAppState() {
 		currentToolIndex,
 		completedToolResults,
 		currentConversationContext,
+		pendingApproval,
 		staticChatComponents,
 		queuedChatComponents,
 		componentKeyCounter,
@@ -271,6 +293,7 @@ export function useAppState() {
 		setIsToolExecuting,
 		setIsBashExecuting,
 		setCurrentBashCommand,
+		setCurrentDirectTool,
 		setDevelopmentMode,
 		setIsIncognitoMode,
 		setPendingToolCalls,

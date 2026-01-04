@@ -3,6 +3,7 @@ import type {
 	ToolHandler,
 	ToolFormatter,
 	ToolValidator,
+	ProgressFormatter,
 	MCPInitResult,
 	MCPServer,
 	MCPTool,
@@ -12,6 +13,7 @@ import {
 	toolRegistry as staticToolRegistry,
 	toolFormatters as staticToolFormatters,
 	toolValidators as staticToolValidators,
+	progressFormatters as staticProgressFormatters,
 	nativeToolsRegistry as staticNativeToolsRegistry,
 } from '@/tools/index';
 import {MCPClient} from '@/mcp/mcp-client';
@@ -39,6 +41,7 @@ export class ToolManager {
 			staticNativeToolsRegistry,
 			staticToolFormatters,
 			staticToolValidators,
+			staticProgressFormatters,
 		);
 	}
 
@@ -93,6 +96,13 @@ export class ToolManager {
 	 */
 	getToolFormatter(toolName: string): ToolFormatter | undefined {
 		return this.registry.getFormatter(toolName);
+	}
+
+	/**
+	 * Get a specific tool progress formatter
+	 */
+	getProgressFormatter(toolName: string): ProgressFormatter | undefined {
+		return this.registry.getProgressFormatter(toolName);
 	}
 
 	/**

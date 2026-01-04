@@ -417,6 +417,7 @@ export class AISDKClient implements LLMClient {
 				maxRetries: this.maxRetries,
 				temperature: 0.6,
 				stopWhen: stepCountIs(10), // Allow up to 10 tool execution steps
+
 				// Can be used to add custom logging, metrics, or step tracking
 				onStepFinish(step) {
 					// Display formatters for auto-executed tools (after execution with results)
@@ -438,6 +439,7 @@ export class AISDKClient implements LLMClient {
 									arguments: toolCall.input as Record<string, unknown>,
 								},
 							};
+
 							const resultStr =
 								typeof toolResult.output === 'string'
 									? toolResult.output

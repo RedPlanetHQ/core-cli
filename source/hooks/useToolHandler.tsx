@@ -4,10 +4,12 @@ import {
 	DevelopmentMode,
 	ToolCall,
 	ToolResult,
+	ToolProgressUpdate,
 } from '@/types/core';
 import {processToolUse, getToolManager} from '@/message-handler';
 import {ConversationContext} from '@/hooks/useAppState';
 import {displayToolResult} from '@/utils/tool-result-display';
+import {progressRegistry} from '@/utils/progress-registry';
 import {parseToolArguments} from '@/utils/tool-args-parser';
 import {createCancellationResults} from '@/utils/tool-cancellation';
 import InfoMessage from '@/components/info-message';
@@ -268,7 +270,15 @@ export function useToolHandler({
 				);
 			}
 
-			const result = await processToolUse(currentTool);
+			// Create onProgress callback for this tool execution
+			const onProgress = (update: ToolProgressUpdate) => {
+				progressRegistry.reportProgress(currentTool.id, update);
+			};
+
+			const result = await processToolUse(currentTool, {
+				onProgress,
+				toolCallId: currentTool.id,
+			});
 
 			const newResults = [...completedToolResults, result];
 			setCompletedToolResults(newResults);

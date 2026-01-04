@@ -3,6 +3,7 @@ import type {
 	ToolHandler,
 	ToolFormatter,
 	ToolValidator,
+	ProgressFormatter,
 	AISDKCoreTool,
 } from '@/types/index';
 
@@ -91,6 +92,15 @@ export class ToolRegistry {
 	 */
 	getValidator(name: string): ToolValidator | undefined {
 		return this.tools.get(name)?.validator;
+	}
+
+	/**
+	 * Get a tool progress formatter by name
+	 * @param name - The tool name
+	 * @returns The ProgressFormatter or undefined if not found
+	 */
+	getProgressFormatter(name: string): ProgressFormatter | undefined {
+		return this.tools.get(name)?.progressFormatter;
 	}
 
 	/**
@@ -200,6 +210,7 @@ export class ToolRegistry {
 	 * @param tools - Record of native AI SDK tools
 	 * @param formatters - Optional record of tool formatters
 	 * @param validators - Optional record of tool validators
+	 * @param progressFormatters - Optional record of tool progress formatters
 	 * @returns New ToolRegistry instance
 	 */
 	static fromRegistries(
@@ -207,6 +218,7 @@ export class ToolRegistry {
 		tools: Record<string, AISDKCoreTool>,
 		formatters?: Record<string, ToolFormatter>,
 		validators?: Record<string, ToolValidator>,
+		progressFormatters?: Record<string, ProgressFormatter>,
 	): ToolRegistry {
 		const registry = new ToolRegistry();
 
@@ -219,6 +231,7 @@ export class ToolRegistry {
 					tool,
 					formatter: formatters?.[name],
 					validator: validators?.[name],
+					progressFormatter: progressFormatters?.[name],
 				});
 			}
 		}

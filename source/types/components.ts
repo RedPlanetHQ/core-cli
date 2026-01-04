@@ -20,6 +20,8 @@ export interface ToolExecutionIndicatorProps {
 	toolName: string;
 	currentIndex: number;
 	totalTools: number;
+	toolArgs?: any;
+	toolManager?: any; // ToolManager type - using any to avoid circular dependency
 }
 
 export interface UserMessageProps {
