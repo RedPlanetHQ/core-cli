@@ -1,7 +1,6 @@
-import chalk from 'chalk';
 import Table from 'cli-table3';
 import type {Colors} from '../types/markdown-parser.js';
-import {stripMarkdown} from './utils';
+import {stripMarkdown, applyColor} from './utils';
 
 // Parse markdown tables using cli-table3
 export function parseMarkdownTable(
@@ -72,7 +71,7 @@ export function parseMarkdownTable(
 
 	// Create table with cli-table3 - full borders, proper alignment
 	const table = new Table({
-		head: header.map(cell => chalk.hex(themeColors.primary).bold(cell)),
+		head: header.map(cell => applyColor(cell, themeColors.primary, ['bold'])),
 		colWidths: colWidths,
 		style: {
 			head: [], // Don't apply default styles, we're using chalk

@@ -137,7 +137,10 @@ export default function NameSelector({
 					return (
 						<Box key={option.name} marginBottom={1}>
 							<Box width={2}>
-								<Text color={isSelected ? colors.success : colors.muted}>
+								<Text
+									color={isSelected ? colors.success : colors.white}
+									dimColor={!isSelected}
+								>
 									{isSelected ? '▶' : ' '}
 								</Text>
 							</Box>

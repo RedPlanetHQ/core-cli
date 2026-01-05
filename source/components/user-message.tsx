@@ -53,7 +53,7 @@ export default memo(function UserMessage({message}: UserMessageProps) {
 						{segments.map((segment, segIndex) => (
 							<Text
 								key={segIndex}
-								inverse
+								backgroundColor={colors.black}
 								bold={segment.isPlaceholder}
 								color={segment.isPlaceholder ? colors.info : colors.white}
 							>

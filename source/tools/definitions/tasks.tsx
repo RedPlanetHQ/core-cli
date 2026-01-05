@@ -439,7 +439,7 @@ const listTasksCoreTool = tool({
 		},
 	}),
 
-	needsApproval: true,
+	needsApproval: false,
 	execute: async (args, _options) => {
 		return await executeListTasks(args);
 	},
@@ -568,7 +568,7 @@ const searchTasksCoreTool = tool({
 		},
 		required: ['query'],
 	}),
-	needsApproval: true,
+	needsApproval: false,
 	execute: async (args, _options) => {
 		return await executeSearchTasks(args);
 	},

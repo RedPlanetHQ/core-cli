@@ -1,8 +1,9 @@
-import chalk from 'chalk';
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import {highlight} from 'cli-highlight';
 import type {Colors} from '../types/markdown-parser.js';
 import {decodeHtmlEntities} from './html-entities.js';
 import {parseMarkdownTable} from './table-parser.js';
+import {applyColor} from './utils.js';
 
 // Basic markdown parser for terminal
 export function parseMarkdown(text: string, themeColors: Colors): string {
@@ -43,7 +44,7 @@ export function parseMarkdown(text: string, themeColors: Colors): string {
 				return placeholder;
 			} catch {
 				// Fallback to plain colored text if highlighting fails
-				const formatted = chalk.hex(themeColors.tool)(String(code).trim());
+				const formatted = applyColor(String(code).trim(), themeColors.tool);
 				const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
 				codeBlocks.push(formatted);
 				return placeholder;
@@ -53,7 +54,7 @@ export function parseMarkdown(text: string, themeColors: Colors): string {
 
 	// Extract inline code (`code`)
 	result = result.replace(/`([^`]+)`/g, (_match, code: string) => {
-		const formatted = chalk.hex(themeColors.tool)(String(code).trim());
+		const formatted = applyColor(String(code).trim(), themeColors.tool);
 		const placeholder = `__INLINE_CODE_${inlineCodes.length}__`;
 		inlineCodes.push(formatted);
 		return placeholder;
@@ -65,18 +66,18 @@ export function parseMarkdown(text: string, themeColors: Colors): string {
 	// Use [ \t]* instead of \s* to avoid consuming newlines before the list
 	// Preserve indentation for nested lists
 	result = result.replace(/^([ \t]*)[-*]\s+(.+)$/gm, (_match, indent, text) => {
-		return indent + chalk.hex(themeColors.white)(`• ${text}`);
+		return indent + applyColor(`• ${text}`, themeColors.white);
 	});
 	result = result.replace(
 		/^([ \t]*)(\d+)\.\s+(.+)$/gm,
 		(_match, indent, num, text) => {
-			return indent + chalk.hex(themeColors.white)(`${num}. ${text}`);
+			return indent + applyColor(`${num}. ${text}`, themeColors.white);
 		},
 	);
 
 	// Bold (**text** only - avoid __ to prevent conflicts with snake_case)
 	result = result.replace(/\*\*([^*]+)\*\*/g, (_match, text) => {
-		return chalk.hex(themeColors.white).bold(text);
+		return applyColor(text, themeColors.white, ['bold']);
 	});
 
 	// Italic (*text* only - avoid _ to prevent conflicts with snake_case)
@@ -86,27 +87,27 @@ export function parseMarkdown(text: string, themeColors: Colors): string {
 	result = result.replace(
 		/(^|\s)\*([^*\n]*[a-zA-Z][^*\n]*)\*($|\s)/gm,
 		(_match, before, text, after) => {
-			return before + chalk.hex(themeColors.white).italic(text) + after;
+			return before + applyColor(text, themeColors.white, ['italic']) + after;
 		},
 	);
 
 	// Headings (# Heading)
 	result = result.replace(/^(#{1,6})\s+(.+)$/gm, (_match, _hashes, text) => {
-		return chalk.hex(themeColors.white).bold(text);
+		return applyColor(text, themeColors.white, ['bold']);
 	});
 
 	// Links [text](url)
 	result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, text, url) => {
 		return (
-			chalk.hex(themeColors.info).underline(text) +
+			applyColor(text, themeColors.info, ['underline']) +
 			' ' +
-			chalk.hex(themeColors.secondary)(`(${url})`)
+			applyColor(`(${url})`, themeColors.secondary)
 		);
 	});
 
 	// Blockquotes (> text)
 	result = result.replace(/^>\s+(.+)$/gm, (_match, text) => {
-		return chalk.hex(themeColors.info).italic(`> ${text}`);
+		return applyColor(`> ${text}`, themeColors.info, ['italic']);
 	});
 
 	// Step 5: Restore code blocks and inline code from placeholders

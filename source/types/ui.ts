@@ -9,11 +9,6 @@ export interface Colors {
 	error: string;
 	info: string;
 	warning: string;
-	// Diff highlight colors
-	diffAdded: string;
-	diffRemoved: string;
-	diffAddedText: string;
-	diffRemovedText: string;
 }
 
 export interface Theme {

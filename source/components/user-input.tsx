@@ -17,6 +17,7 @@ import StatusBar from '@/components/status-bar';
 import CommandList from '@/components/command-list';
 import RoutinesList from '@/components/routines-list';
 import {getRoutineNames} from '@/utils/routines';
+import {useKeyBindingContext} from '@/contexts/KeyBindingContext';
 
 interface ChatProps {
 	onSubmit?: (message: string) => void;
@@ -50,6 +51,7 @@ export default function UserInput({
 	const inputState = useInputState();
 	const uiState = useUIStateContext();
 	const {boxWidth, isNarrow} = useResponsiveTerminal();
+	const {dispatch: dispatchKeyBinding} = useKeyBindingContext();
 	const [textInputKey, setTextInputKey] = useState(0);
 	// Store the original InputState (including placeholders) when starting history navigation
 	const [originalInputState, setOriginalInputState] = useState<
@@ -417,6 +419,13 @@ export default function UserInput({
 		// 	key,
 		// 	charCode: inputChar?.charCodeAt(0),
 		// });
+
+		// Dispatch to registered global key binding handlers first
+		// If a handler consumes the event, stop here
+		const consumed = dispatchKeyBinding({input: inputChar, key});
+		if (consumed) {
+			return;
+		}
 
 		// Handle escape for cancellation even when disabled
 		if (key.escape && disabled && onCancel) {

@@ -1,20 +1,19 @@
 import type {Theme, ThemePreset, Colors} from '@/types/ui';
 
 const darkThemeColors: Colors = {
-	white: '#E7E7E7',
-	black: '#222222',
+	white: 'white',
+	black: 'black',
 	primary: '#C15E50',
-	muted: '#B4B4B4',
+	muted: 'gray',
 	tool: '#C15E50',
-	success: '#7DC599',
-	error: '#D45453',
-	secondary: '#AD6E30',
 	info: '#C15E50',
-	warning: '#DDA068',
-	diffAdded: '#1e2f1e',
-	diffRemoved: '#2f1e1e',
-	diffAddedText: '#9ece6a',
-	diffRemovedText: '#f7768e',
+	// Muted text
+
+	// Status
+	success: 'green',
+	error: 'red',
+	warning: 'yellow',
+	secondary: 'cyan', // neutral secondary, readable on both themes
 };
 
 const lightThemeColors: Colors = {
@@ -28,10 +27,6 @@ const lightThemeColors: Colors = {
 	secondary: '#8B5A25',
 	info: '#B94A3C',
 	warning: '#C78540',
-	diffAdded: '#e6f5ea',
-	diffRemoved: '#fce8e8',
-	diffAddedText: '#2d8659',
-	diffRemovedText: '#c13332',
 };
 
 /**

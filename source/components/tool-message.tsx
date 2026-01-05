@@ -1,9 +1,10 @@
 import React, {useState} from 'react';
 import {TitledBox, titleStyles} from '@mishieck/ink-titled-box';
-import {Text, Box, useInput} from 'ink';
+import {Text, Box} from 'ink';
 
 import {useTheme} from '@/hooks/useTheme';
 import {useTerminalWidth} from '@/hooks/useTerminalWidth';
+import {useGlobalKeyBinding} from '@/hooks/useGlobalKeyBinding';
 
 const PREVIEW_CHARS = 100; // Number of characters to show when collapsed
 
@@ -24,12 +25,16 @@ export default function ToolMessage({
 	const {colors} = useTheme();
 	const [isExpanded, setIsExpanded] = useState(false);
 
-	// Handle Ctrl+O to toggle expansion
-	useInput((input, key) => {
-		if (key.ctrl && input === 'o') {
+	// Handle Ctrl+O to toggle expansion (globally - works even when input doesn't have focus)
+	useGlobalKeyBinding(
+		{ctrl: true, key: 'o'},
+		() => {
 			setIsExpanded(prev => !prev);
-		}
-	});
+			return true; // Consume the event to prevent propagation
+		},
+		{id: 'tool-message-expand-toggle', priority: 10},
+		[setIsExpanded],
+	);
 
 	// Handle both string and ReactNode messages
 	let messageContent: React.ReactNode;

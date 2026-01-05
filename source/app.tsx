@@ -12,6 +12,7 @@ import {useAppState} from '@/hooks/useAppState';
 
 // Provide shared UI state to components
 import {UIStateProvider} from '@/hooks/useUIState';
+import {KeyBindingProvider} from '@/contexts/KeyBindingContext';
 import UserInput from '@/components/user-input';
 import Spinner from 'ink-spinner';
 import {useModeHandlers} from './hooks/useModeHandlers';
@@ -325,150 +326,158 @@ export default function App() {
 	return (
 		<ThemeContext.Provider value={themeContextValue}>
 			<UIStateProvider>
-				<Box flexDirection="column" padding={1} width="100%">
-					{/* Use natural flexGrow layout - Static components prevent re-renders */}
-					<Box flexGrow={1} flexDirection="column" minHeight={0}>
-						{appState.startChat && (
-							<ChatQueue
-								staticComponents={[
-									...staticComponents,
-									...appState.staticChatComponents,
-								]}
-								queuedComponents={appState.queuedChatComponents}
-							/>
-						)}
-					</Box>
-					{appState.startChat && (
-						<Box flexDirection="column" marginLeft={-1}>
-							{appState.isCancelling && <CancellingIndicator />}
-
-							{chatHandler.isStreaming && chatHandler.streamingContent && (
-								<Box flexDirection="column" marginBottom={1}>
-									<Box marginBottom={1}>
-										<Text color={themeContextValue.colors.primary} bold>
-											{getAssistantName()}:
-										</Text>
-									</Box>
-									<Text>{chatHandler.streamingContent}</Text>
-								</Box>
-							)}
-
-							{appState.isModelSelectionMode ? (
-								<ModelSelector
-									client={appState.client}
-									currentModel={appState.currentModel}
-									onModelSelect={model =>
-										void modeHandlers.handleModelSelect(model)
-									}
-									onCancel={modeHandlers.handleModelSelectionCancel}
+				<KeyBindingProvider>
+					<Box flexDirection="column" padding={1} width="100%">
+						{/* Use natural flexGrow layout - Static components prevent re-renders */}
+						<Box flexGrow={1} flexDirection="column" minHeight={0}>
+							{appState.startChat && (
+								<ChatQueue
+									staticComponents={[
+										...staticComponents,
+										...appState.staticChatComponents,
+									]}
+									queuedComponents={appState.queuedChatComponents}
 								/>
-							) : appState.isProviderSelectionMode ? (
-								<ProviderSelector
-									currentProvider={appState.currentProvider}
-									onProviderSelect={provider =>
-										void modeHandlers.handleProviderSelect(provider)
-									}
-									onCancel={modeHandlers.handleProviderSelectionCancel}
-								/>
-							) : appState.isCodingAgentSelectionMode ? (
-								<CodingAgentSelector
-									currentAgent={appConfig.defaultCodingAgent}
-									onAgentSelect={modeHandlers.handleCodingAgentSelect}
-									onCancel={modeHandlers.handleCodingAgentSelectionCancel}
-								/>
-							) : appState.isThemeSelectionMode ? (
-								<ThemeSelector
-									onThemeSelect={modeHandlers.handleThemeSelect}
-									onCancel={modeHandlers.handleThemeSelectionCancel}
-								/>
-							) : appState.isNameSelectionMode ? (
-								<NameSelector
-									onNameSelect={modeHandlers.handleNameSelect}
-									onCancel={modeHandlers.handleNameSelectionCancel}
-								/>
-							) : appState.isConfigWizardMode ? (
-								<ConfigWizard
-									projectDir={process.cwd()}
-									onComplete={configPath =>
-										void modeHandlers.handleConfigWizardComplete(configPath)
-									}
-									onCancel={modeHandlers.handleConfigWizardCancel}
-								/>
-							) : appState.isToolConfirmationMode &&
-							  appState.pendingApproval ? (
-								<ToolConfirmation
-									toolCall={appState.pendingApproval.toolCall}
-									metadata={appState.pendingApproval.metadata}
-									onConfirm={(approved: boolean) => {
-										if (appState.pendingApproval) {
-											approvalRegistry.resolve(
-												appState.pendingApproval.toolCall.id,
-												approved,
-											);
-											appState.setIsToolConfirmationMode(false);
-										}
-									}}
-									onCancel={() => {
-										if (appState.pendingApproval) {
-											approvalRegistry.resolve(
-												appState.pendingApproval.toolCall.id,
-												false,
-											);
-											appState.setIsToolConfirmationMode(false);
-										}
-									}}
-								/>
-							) : appState.isToolExecuting ? (
-								<ProgressIndicator
-									toolName={
-										(
-											appState.pendingToolCalls[appState.currentToolIndex] ||
-											appState.currentDirectTool
-										)?.function.name
-									}
-									toolArgs={
-										(
-											appState.pendingToolCalls[appState.currentToolIndex] ||
-											appState.currentDirectTool
-										)?.function.arguments
-									}
-									toolManager={appState.toolManager}
-									toolCallId={
-										(
-											appState.pendingToolCalls[appState.currentToolIndex] ||
-											appState.currentDirectTool
-										)?.id
-									}
-								/>
-							) : appState.isBashExecuting ? (
-								<BashExecutionIndicator command={appState.currentBashCommand} />
-							) : appState.mcpInitialized && appState.client ? (
-								<UserInput
-									customCommands={[]}
-									onSubmit={msg => void handleMessageSubmit(msg)}
-									disabled={
-										chatHandler.isStreaming ||
-										appState.isToolExecuting ||
-										appState.isBashExecuting
-									}
-									onCancel={handleCancel}
-									onToggleMode={handleToggleDevelopmentMode}
-									developmentMode={appState.developmentMode}
-									mcpStatus={appState.mcpStatus}
-									isIncognitoMode={appState.isIncognitoMode}
-									statusBarRefreshTrigger={appState.statusBarRefreshTrigger}
-									onStatusBarRefresh={appState.triggerStatusBarRefresh}
-								/>
-							) : appState.mcpInitialized && !appState.client ? (
-								<></>
-							) : (
-								<Text color={themeContextValue.colors.white}>
-									<Spinner type="dots2" /> Loading...
-								</Text>
 							)}
 						</Box>
-					)}
-				</Box>
+						{appState.startChat && (
+							<Box flexDirection="column" marginLeft={-1}>
+								{appState.isCancelling && <CancellingIndicator />}
+
+								{chatHandler.isStreaming && chatHandler.streamingContent && (
+									<Box flexDirection="column" marginBottom={1}>
+										<Box marginBottom={1}>
+											<Text color={themeContextValue.colors.primary} bold>
+												{getAssistantName()}:
+											</Text>
+										</Box>
+										<Text>{chatHandler.streamingContent}</Text>
+									</Box>
+								)}
+
+								{appState.isModelSelectionMode ? (
+									<ModelSelector
+										client={appState.client}
+										currentModel={appState.currentModel}
+										onModelSelect={model =>
+											void modeHandlers.handleModelSelect(model)
+										}
+										onCancel={modeHandlers.handleModelSelectionCancel}
+									/>
+								) : appState.isProviderSelectionMode ? (
+									<ProviderSelector
+										currentProvider={appState.currentProvider}
+										onProviderSelect={provider =>
+											void modeHandlers.handleProviderSelect(provider)
+										}
+										onCancel={modeHandlers.handleProviderSelectionCancel}
+									/>
+								) : appState.isCodingAgentSelectionMode ? (
+									<CodingAgentSelector
+										currentAgent={appConfig.defaultCodingAgent}
+										onAgentSelect={modeHandlers.handleCodingAgentSelect}
+										onCancel={modeHandlers.handleCodingAgentSelectionCancel}
+									/>
+								) : appState.isThemeSelectionMode ? (
+									<ThemeSelector
+										onThemeSelect={modeHandlers.handleThemeSelect}
+										onCancel={modeHandlers.handleThemeSelectionCancel}
+									/>
+								) : appState.isNameSelectionMode ? (
+									<NameSelector
+										onNameSelect={modeHandlers.handleNameSelect}
+										onCancel={modeHandlers.handleNameSelectionCancel}
+									/>
+								) : appState.isConfigWizardMode ? (
+									<ConfigWizard
+										projectDir={process.cwd()}
+										onComplete={configPath =>
+											void modeHandlers.handleConfigWizardComplete(configPath)
+										}
+										onCancel={modeHandlers.handleConfigWizardCancel}
+									/>
+								) : appState.isToolConfirmationMode &&
+								  appState.pendingApproval ? (
+									<ToolConfirmation
+										toolCall={appState.pendingApproval.toolCall}
+										metadata={appState.pendingApproval.metadata}
+										onConfirm={(approved: boolean) => {
+											if (appState.pendingApproval) {
+												approvalRegistry.resolve(
+													appState.pendingApproval.toolCall.id,
+													approved,
+												);
+												appState.setIsToolConfirmationMode(false);
+											}
+										}}
+										onCancel={() => {
+											if (appState.pendingApproval) {
+												approvalRegistry.resolve(
+													appState.pendingApproval.toolCall.id,
+													false,
+												);
+												appState.setIsToolConfirmationMode(false);
+											}
+										}}
+									/>
+								) : appState.isToolExecuting ? (
+									<ProgressIndicator
+										toolName={
+											(
+												appState.pendingToolCalls[appState.currentToolIndex] ||
+												appState.currentDirectTool
+											)?.function.name
+										}
+										toolArgs={
+											(
+												appState.pendingToolCalls[appState.currentToolIndex] ||
+												appState.currentDirectTool
+											)?.function.arguments
+										}
+										toolManager={appState.toolManager}
+										toolCallId={
+											(
+												appState.pendingToolCalls[appState.currentToolIndex] ||
+												appState.currentDirectTool
+											)?.id
+										}
+									/>
+								) : appState.isBashExecuting ? (
+									<BashExecutionIndicator
+										command={appState.currentBashCommand}
+									/>
+								) : (
+									<></>
+								)}
+
+								{appState.mcpInitialized && appState.client ? (
+									<UserInput
+										customCommands={[]}
+										onSubmit={msg => void handleMessageSubmit(msg)}
+										disabled={
+											chatHandler.isStreaming ||
+											appState.isToolExecuting ||
+											appState.isBashExecuting
+										}
+										onCancel={handleCancel}
+										onToggleMode={handleToggleDevelopmentMode}
+										developmentMode={appState.developmentMode}
+										mcpStatus={appState.mcpStatus}
+										isIncognitoMode={appState.isIncognitoMode}
+										statusBarRefreshTrigger={appState.statusBarRefreshTrigger}
+										onStatusBarRefresh={appState.triggerStatusBarRefresh}
+									/>
+								) : appState.mcpInitialized && !appState.client ? (
+									<></>
+								) : (
+									<Text color={themeContextValue.colors.white}>
+										<Spinner type="dots2" /> Loading...
+									</Text>
+								)}
+							</Box>
+						)}
+					</Box>
+				</KeyBindingProvider>
 			</UIStateProvider>
 		</ThemeContext.Provider>
 	);
